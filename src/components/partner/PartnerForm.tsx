@@ -49,7 +49,8 @@ export const PartnerForm: React.FC<PartnerFormProps> = ({
         <PartnerDetailsFields form={form} />
 
         <div className="border-t pt-4 mt-6">
-          <h3 className="text-lg font-medium mb-4">Aggiungi Contatto</h3>
+          <h3 className="text-lg font-medium mb-2">Aggiungi Contatto *</h3>
+          <p className="text-sm text-muted-foreground mb-4">Per poter salvare è necessario inserire almeno un contatto.</p>
           
           <ContattoFormFields 
             currentContatto={currentContatto} 

@@ -95,12 +95,12 @@ const PartnerFormModal: React.FC<PartnerFormModalProps> = ({ ruolo }) => {
   return (
     <Dialog open={isDialogOpen} onOpenChange={onOpenChange}>
       <div className="flex gap-2">
-        {isSuperAdminOrMaster && (
+        {/* {isSuperAdminOrMaster && (
           <Button onClick={() => console.log("🔄 Sincronizza con Mailchimp")}>
             <RefreshCcw className="mr-1 h-4 w-4" />
             Sincronizza con Mailchimp
           </Button>
-        )}
+        )} */}
         <DialogTrigger asChild>
           <Button onClick={() => setIsDialogOpen(true)}>
             <Plus className="mr-1 h-4 w-4" />

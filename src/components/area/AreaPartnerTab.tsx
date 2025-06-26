@@ -5,6 +5,7 @@ import { useAreaPartners } from "@/hooks/area-details";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import PartnerTable from "./partner/PartnerTable";
 import { useAuth } from "@/hooks/auth";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface AreaPartnerTabProps {
   areaId: string;
@@ -17,6 +18,7 @@ const AreaPartnerTab: React.FC<AreaPartnerTabProps> = ({ areaId }) => {
   const isMaster = userRole === "Master";
   const isGestore = userRole === "Gestore";
   const isPrivilegedUser = isSuperAdmin || isMaster || isGestore;
+  const isMobile = useIsMobile();
 
   const { partners, isLoading, error } = useAreaPartners(areaId);
 
@@ -26,9 +28,12 @@ const AreaPartnerTab: React.FC<AreaPartnerTabProps> = ({ areaId }) => {
   if (isLoading) {
     return (
       <Card className="border-none shadow-none bg-transparent">
-        <CardContent className="p-0">
-          <div className="flex items-center justify-center h-40">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-verde-light"></div>
+        <CardContent className="p-2 sm:p-4">
+          <div className="flex items-center justify-center h-32 sm:h-40">
+            <div className="flex flex-col items-center justify-center space-y-2">
+              <div className="animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-b-2 border-verde-light"></div>
+              <div className="text-sm text-muted-foreground">Caricamento...</div>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -38,8 +43,8 @@ const AreaPartnerTab: React.FC<AreaPartnerTabProps> = ({ areaId }) => {
   if (error) {
     return (
       <Card className="border-none shadow-none bg-transparent">
-        <CardContent className="p-0">
-          <div className="text-center text-destructive">
+        <CardContent className="p-2 sm:p-4">
+          <div className="text-center text-destructive text-sm">
             Si è verificato un errore durante il caricamento dei partner.
           </div>
         </CardContent>
@@ -50,14 +55,23 @@ const AreaPartnerTab: React.FC<AreaPartnerTabProps> = ({ areaId }) => {
   return (
     <Card className="border-none shadow-none bg-transparent">
       <CardContent className="p-0">
-        {/* <ScrollArea className="h-[500px] w-full pr-4"> */}
-        <PartnerTable
-          areaId={areaId}
-          partners={partners || []}
-          canConfirmRanking={isPrivilegedUser}
-          userRole={userRole} // Pass user role to PartnerTable
-        />
-        {/* </ScrollArea> */}
+        {isMobile ? (
+          <div className="px-2">
+            <PartnerTable
+              areaId={areaId}
+              partners={partners || []}
+              canConfirmRanking={isPrivilegedUser}
+              userRole={userRole}
+            />
+          </div>
+        ) : (
+          <PartnerTable
+            areaId={areaId}
+            partners={partners || []}
+            canConfirmRanking={isPrivilegedUser}
+            userRole={userRole}
+          />
+        )}
       </CardContent>
     </Card>
   );

@@ -4,14 +4,14 @@ import { toast } from "@/components/ui/sonner";
 import { createPasswordResetError, PasswordResetError } from "./types";
 
 // Supabase API key
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1kaWNqeHltbnZ0ZWNzenN2dHF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUzNTIzOTUsImV4cCI6MjA2MDkyODM5NX0.opm8RWcqJefHTGeJcvME17oyhaUBsPaw0Lp9VcibIcY";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhnYnZmcmhlbmZrdWpmeXFtenNrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDgwMDM0NTMsImV4cCI6MjA2MzU3OTQ1M30.JAYPlcX-9o6niMx0fMIpi8r6Y3iqkhuuTklD_dCWPd4";
 
 export const useEmailSubmission = () => {
   const handleEmailSubmit = async (email: string) => {
     try {
       if (!email.trim()) {
         throw createPasswordResetError(
-          "Email richiesta", 
+          "Email richiesta",
           'validation'
         );
       }
@@ -22,7 +22,7 @@ export const useEmailSubmission = () => {
         .select('email')
         .eq('email', email)
         .maybeSingle();
-      
+
       if (userError) {
         console.error("Errore nel controllo email:", userError);
         throw createPasswordResetError(
@@ -30,7 +30,7 @@ export const useEmailSubmission = () => {
           'database'
         );
       }
-      
+
       if (!userRecord) {
         throw createPasswordResetError(
           "Email non registrata",
@@ -50,52 +50,52 @@ export const useEmailSubmission = () => {
         });
 
         const data = await response.json();
-        
+
         if (!response.ok) {
           console.error("Errore risposta edge function:", response.status, data);
-          
+
           // Handle rate limit errors specifically
-          if (response.status === 429 || 
-              data.code === "over_email_send_rate_limit" ||
-              data.error?.includes("Troppe richieste")) {
+          if (response.status === 429 ||
+            data.code === "over_email_send_rate_limit" ||
+            data.error?.includes("Troppe richieste")) {
             throw createPasswordResetError(
-              "Troppe richieste di reset password. Attendere qualche minuto e riprovare.", 
+              "Troppe richieste di reset password. Attendere qualche minuto e riprovare.",
               'rate_limit',
               data.message
             );
           }
-          
+
           // Handle timeout errors
-          if (response.status === 504 || 
-              data.name === "AuthRetryableFetchError" ||
-              data.error?.includes("troppo tempo")) {
+          if (response.status === 504 ||
+            data.name === "AuthRetryableFetchError" ||
+            data.error?.includes("troppo tempo")) {
             throw createPasswordResetError(
-              "Il server ha impiegato troppo tempo a rispondere. Riprova tra qualche momento.", 
+              "Il server ha impiegato troppo tempo a rispondere. Riprova tra qualche momento.",
               'timeout',
               data.message
             );
           }
-          
+
           if (response.status === 404) {
             throw createPasswordResetError(
-              "Email non registrata", 
+              "Email non registrata",
               'database',
               data.message
             );
           }
-          
+
           throw createPasswordResetError(
-            data.message || data.error || "Errore durante l'invio dell'email", 
+            data.message || data.error || "Errore durante l'invio dell'email",
             'network'
           );
         }
-        
+
         toast.success("Email di impostazione password inviata");
       } catch (error) {
         // Handle network errors
         if ((error as Error).name !== 'PasswordResetError') {
           throw createPasswordResetError(
-            "Problema di connessione. Verifica la tua connessione internet e riprova.", 
+            "Problema di connessione. Verifica la tua connessione internet e riprova.",
             'network',
             (error as Error).message
           );
@@ -104,10 +104,10 @@ export const useEmailSubmission = () => {
       }
     } catch (error) {
       console.error("Errore durante l'invio dell'email:", error);
-      
+
       if ((error as PasswordResetError).type) {
         const resetError = error as PasswordResetError;
-        
+
         if (resetError.type === 'rate_limit') {
           toast.error(resetError.message, { duration: 8000 });
         } else if (resetError.type === 'timeout') {

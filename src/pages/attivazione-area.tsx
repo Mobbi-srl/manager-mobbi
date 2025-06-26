@@ -1,48 +1,51 @@
 
-import React, { useEffect } from "react";
-import { MapPin } from "lucide-react";
-import AreaFormModal from "@/components/area/AreaFormModal";
+import { useState } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
 import AreeTable from "@/components/area/AreeTable";
+import AreaFormModal from "@/components/area/AreaFormModal";
 import { useAuth } from "@/hooks/auth";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { useUserProfile } from "@/hooks/useUserProfile";
+// import { ImportComuniButton } from "@/components/area/ImportComuniButton";
 
 const AttivazioneArea = () => {
-  const [refreshKey, setRefreshKey] = React.useState(0);
+  const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const { user } = useAuth();
-  
-  // Check if user has permission to create new areas (only Master and SuperAdmin)
-  const canCreateArea = user?.user_metadata?.ruolo === "Master" || user?.user_metadata?.ruolo === "SuperAdmin";
-  
-  const handleAreaCreated = () => {
-    // Force a refresh of the table
-    setRefreshKey(prevKey => prevKey + 1);
-  };
-
-  // Add debug logging
-  useEffect(() => {
-    console.log("🔍 AttivazioneArea: Page loaded with user role:", user?.user_metadata?.ruolo);
-    console.log("🔍 AttivazioneArea: User can create area:", canCreateArea);
-    console.log("🔍 AttivazioneArea: User ID:", user?.id);
-  }, [user, canCreateArea]);
+  const { userProfile } = useUserProfile(user);
+  const ruolo = userProfile?.ruolo || user?.user_metadata?.ruolo;
 
   return (
-    <div className="h-full flex flex-col overflow-hidden">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-2">
-          <MapPin className="h-6 w-6 text-verde-light" />
-          <h1 className="text-2xl font-bold">Gestione Aree</h1>
+    <div className="container mx-auto p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Gestione Aree Geografiche</h1>
+          <p className="text-muted-foreground mt-2">
+            Configura e gestisci le aree geografiche per l'attivazione dei partner
+          </p>
         </div>
-        
-        {/* Only show the AreaFormModal if user has permission */}
-        {canCreateArea && (
-          <AreaFormModal onAreaCreated={handleAreaCreated} />
-        )}
+        <div className="flex gap-2">
+          {/* <ImportComuniButton /> */}
+          <Button onClick={() => setIsFormModalOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Nuova Area
+          </Button>
+        </div>
       </div>
-      <div className="bg-card flex-1 rounded-lg border shadow-xl bg-gray-900/60 border-gray-800 overflow-hidden">
-        <ScrollArea className="h-full w-full p-6">
-          <AreeTable key={refreshKey} />
-        </ScrollArea>
-      </div>
+
+      {/* Tabella delle aree */}
+      <Card>
+        <CardContent>
+          <AreeTable />
+        </CardContent>
+      </Card>
+
+      {/* Modal per la creazione di nuove aree */}
+      {isFormModalOpen && (
+        <AreaFormModal 
+          onAreaCreated={() => setIsFormModalOpen(false)} 
+        />
+      )}
     </div>
   );
 };

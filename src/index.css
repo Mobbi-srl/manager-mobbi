@@ -103,4 +103,41 @@
   .content-scrollable {
     @apply overflow-y-auto overflow-x-hidden;
   }
+
+  /* Mobile responsive utilities */
+  .mobile-hidden {
+    @apply hidden sm:block;
+  }
+
+  .mobile-only {
+    @apply block sm:hidden;
+  }
+
+  .mobile-stack {
+    @apply flex flex-col sm:flex-row;
+  }
+
+  .mobile-full-width {
+    @apply w-full sm:w-auto;
+  }
+
+  .mobile-responsive-grid {
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4;
+  }
+
+  .mobile-responsive-flex {
+    @apply flex flex-col sm:flex-row gap-4;
+  }
+
+  .mobile-text-center {
+    @apply text-center sm:text-left;
+  }
+
+  .mobile-padding {
+    @apply p-4 sm:p-6;
+  }
+
+  .mobile-header {
+    @apply text-xl sm:text-2xl font-bold;
+  }
 }

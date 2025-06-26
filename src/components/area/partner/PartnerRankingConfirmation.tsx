@@ -38,13 +38,13 @@ const PartnerRankingConfirmation: React.FC<PartnerRankingConfirmationProps> = ({
 
   // Get an appropriate message for the button title
   const getButtonTitle = () => {
-    if (isRankingConfirmed) return "Grado di urgenza già confermato";
+    if (isRankingConfirmed) return "Valutazione già confermata";
     if (!canBeConfirmed) return "Solo partner APPROVATI possono essere confermati";
 
     if (isPrivilegedUser) {
-      return "Conferma Grado di urgenza e promuovi a SELEZIONATO";
+      return "Conferma Valutazione e promuovi a SELEZIONATO";
     } else {
-      return "Conferma Grado di urgenza";
+      return "Conferma Valutazione";
     }
   };
 

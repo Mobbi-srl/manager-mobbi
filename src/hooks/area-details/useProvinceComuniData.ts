@@ -1,14 +1,10 @@
 
 import { useMemo } from 'react';
-import csvData from '@/utils/csvjson.json';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { Database } from "@/integrations/supabase/types";
 
-// Define the actual structure of the CSV data
-interface CsvLocality {
-  Regione: string;
-  Provincia: string;
-  Città: string;
-  'Sigla Provincia': string;
-}
+type RegioneItaliana = Database["public"]["Enums"]["regione_italiana"];
 
 export interface LocalityData {
   comune: string;
@@ -18,42 +14,57 @@ export interface LocalityData {
 }
 
 export const useProvinceComuniData = (selectedRegion?: string) => {
-  const provincesInRegion = useMemo(() => {
-    if (!selectedRegion) return [];
-    
-    // Filter localities by selected region and extract unique provinces
-    const provinces = (csvData as CsvLocality[])
-      .filter((item: CsvLocality) => 
-        item.Regione.toLowerCase() === selectedRegion.toLowerCase())
-      .map((item: CsvLocality) => ({
-        nome: item.Provincia,
-        sigla: item["Sigla Provincia"]
-      }));
-    
-    // Remove duplicates by provincia name
-    return Array.from(
-      new Map(provinces.map(item => [item.nome, item])).values()
-    ).sort((a, b) => a.nome.localeCompare(b.nome));
-  }, [selectedRegion]);
+  // Fetch province data from Supabase
+  const { data: provinceData } = useQuery({
+    queryKey: ['province', selectedRegion],
+    queryFn: async () => {
+      if (!selectedRegion) return [];
+      
+      console.log(`🔍 useProvinceComuniData: Fetching provinces for region: ${selectedRegion}`);
+      
+      const { data, error } = await supabase
+        .from('comuni_italiani')
+        .select('provincia, sigla_provincia')
+        .eq('regione', selectedRegion as RegioneItaliana);
+      
+      if (error) {
+        console.error('❌ Error fetching provinces:', error);
+        throw error;
+      }
+      
+      console.log(`✅ Found ${data?.length || 0} records for region ${selectedRegion}`);
+      
+      // Remove duplicates and create unique provinces list
+      const uniqueProvinces = Array.from(
+        new Map(
+          data?.map(item => [
+            item.provincia, 
+            { nome: item.provincia, sigla: item.sigla_provincia }
+          ]) || []
+        ).values()
+      ).sort((a, b) => a.nome.localeCompare(b.nome));
+      
+      console.log(`✅ Unique provinces found:`, uniqueProvinces);
+      return uniqueProvinces;
+    },
+    enabled: !!selectedRegion,
+    staleTime: 300000, // 5 minutes
+  });
 
-  const getComuniByProvince = (province?: string) => {
-    if (!selectedRegion || !province) return [];
+  const provincesInRegion = useMemo(() => {
+    return provinceData || [];
+  }, [provinceData]);
+
+  const getComuniByProvinces = (provinces?: string[]) => {
+    if (!selectedRegion || !provinces || provinces.length === 0) return [];
     
-    // Filter localities by selected region and province
-    return (csvData as CsvLocality[])
-      .filter((item: CsvLocality) => 
-        item.Regione.toLowerCase() === selectedRegion.toLowerCase() && 
-        item.Provincia.toLowerCase() === province.toLowerCase())
-      .map((item: CsvLocality) => ({
-        nome: item.Città,
-        provincia: item.Provincia,
-        sigla: item["Sigla Provincia"]
-      }))
-      .sort((a, b) => a.nome.localeCompare(b.nome));
+    // This will be handled by the CitySelector component directly
+    // We keep this function for compatibility but it's not used in the new implementation
+    return [];
   };
 
   return {
     provincesInRegion,
-    getComuniByProvince
+    getComuniByProvinces
   };
 };

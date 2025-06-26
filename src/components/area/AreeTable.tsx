@@ -1,16 +1,19 @@
-import React, { useState, useEffect } from "react";
+
+import React, { useState, useEffect, useMemo } from "react";
 import { Table, TableBody } from "@/components/ui/table";
 import { useAuth } from "@/hooks/auth";
 import { useAreeConStatistiche } from "@/hooks/area/useAreeConStatistiche";
 import { useDeleteArea } from "@/hooks/area";
 import { useFetchUserAreas } from "@/hooks/users/areas";
 import AreaDetailModal from "./AreaDetailModal";
+import EditAreaModal from "./EditAreaModal";
 import AreaTableHeader from "./AreaTableHeader";
 import AreaTableRow from "./AreaTableRow";
 import AreaTableEmptyState from "./AreaTableEmptyState";
 import AreaTableLoadingState from "./AreaTableLoadingState";
-import { useAreaFiltering } from "@/hooks/area/useAreaFiltering";
+import AreaTableFilters from "./AreaTableFilters";
 import { toast } from "sonner";
+import { Area } from "@/hooks/area/types";
 
 const AreeTable: React.FC = () => {
   console.log("🔍 AreeTable: Component rendering");
@@ -23,6 +26,11 @@ const AreeTable: React.FC = () => {
   const isGestoreRole = userRole === "Gestore";
 
   const isPrivilegedUser = isSuperAdmin || isMaster || isAgenzia;
+
+  // Filtri state
+  const [searchNome, setSearchNome] = useState("");
+  const [selectedRegione, setSelectedRegione] = useState("");
+  const [selectedStato, setSelectedStato] = useState("");
 
   console.log(`🔍 AreeTable: User ${userId} has role ${userRole}, isPrivilegedUser=${isPrivilegedUser}`);
 
@@ -39,6 +47,10 @@ const AreeTable: React.FC = () => {
   const [selectedAreaId, setSelectedAreaId] = useState<string | null>(null);
   const [selectedAreaName, setSelectedAreaName] = useState<string>("");
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  
+  // Edit modal state
+  const [selectedAreaForEdit, setSelectedAreaForEdit] = useState<Area | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   const isLoading = isAllAreasLoading || (isGestoreRole && isUserAreasLoading);
 
@@ -63,6 +75,12 @@ const AreeTable: React.FC = () => {
     setIsDetailModalOpen(true);
   };
 
+  const handleEditArea = (area: Area) => {
+    console.log(`🔍 AreeTable: Editing area ${area.nome} (${area.id})`);
+    setSelectedAreaForEdit(area);
+    setIsEditModalOpen(true);
+  };
+
   const handleDeleteArea = (id: string) => {
     console.log(`🔍 AreeTable: Deleting area ${id}`);
     deleteArea.mutate(id);
@@ -74,6 +92,12 @@ const AreeTable: React.FC = () => {
     if (isGestoreRole) {
       refetchUserAreas();
     }
+  };
+
+  const handleClearAllFilters = () => {
+    setSearchNome("");
+    setSelectedRegione("");
+    setSelectedStato("");
   };
 
   // Force refetch on mount
@@ -90,27 +114,63 @@ const AreeTable: React.FC = () => {
   console.log("🔍 AreeTable: User area IDs:", userAreaIds);
 
   // Filter areas based on user role
-  const displayAreas = isGestoreRole
+  const baseDisplayAreas = isGestoreRole
     ? (allAree?.filter((area) => userAreaIds.includes(area.id)) || [])
     : (allAree || []);
+
+  // Apply filters
+  const filteredAreas = useMemo(() => {
+    let filtered = baseDisplayAreas;
+
+    // Filter by nome
+    if (searchNome) {
+      filtered = filtered.filter(area => 
+        area.nome.toLowerCase().includes(searchNome.toLowerCase())
+      );
+    }
+
+    // Filter by regione
+    if (selectedRegione) {
+      filtered = filtered.filter(area => area.regione === selectedRegione);
+    }
+
+    // Filter by stato
+    if (selectedStato) {
+      filtered = filtered.filter(area => area.stato === selectedStato);
+    }
+
+    return filtered;
+  }, [baseDisplayAreas, searchNome, selectedRegione, selectedStato]);
     
-  console.log(`🔍 AreeTable: Displaying ${displayAreas.length} areas for ${isGestoreRole ? 'Gestore' : 'privileged'} user`);
+  console.log(`🔍 AreeTable: Displaying ${filteredAreas.length} areas for ${isGestoreRole ? 'Gestore' : 'privileged'} user`);
 
   return (
     <>
-      <div className="relative overflow-x-auto mt-6">
+      <AreaTableFilters
+        searchNome={searchNome}
+        setSearchNome={setSearchNome}
+        selectedRegione={selectedRegione}
+        setSelectedRegione={setSelectedRegione}
+        selectedStato={selectedStato}
+        setSelectedStato={setSelectedStato}
+        onClearAll={handleClearAllFilters}
+      />
+
+      <div className="relative overflow-x-auto">
         <Table>
           <AreaTableHeader />
           <TableBody>
             {isLoading ? (
               <AreaTableLoadingState />
-            ) : (displayAreas.length > 0 ? (
-              displayAreas.map((area) => (
+            ) : (filteredAreas.length > 0 ? (
+              filteredAreas.map((area) => (
                 <AreaTableRow
                   key={area.id}
                   area={area}
                   isSuperAdmin={isSuperAdmin}
+                  isMaster={isMaster}
                   onViewDetails={handleViewDetails}
+                  onEditArea={handleEditArea}
                   onDeleteArea={handleDeleteArea}
                 />
               ))
@@ -127,6 +187,13 @@ const AreeTable: React.FC = () => {
         isOpen={isDetailModalOpen}
         onOpenChange={setIsDetailModalOpen}
         onDataChanged={handleDataChanged}
+      />
+
+      <EditAreaModal
+        area={selectedAreaForEdit}
+        isOpen={isEditModalOpen}
+        onOpenChange={setIsEditModalOpen}
+        onAreaUpdated={handleDataChanged}
       />
     </>
   );

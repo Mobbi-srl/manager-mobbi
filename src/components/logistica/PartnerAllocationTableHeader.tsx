@@ -6,12 +6,13 @@ export const PartnerAllocationTableHeader: React.FC = () => {
   return (
     <TableHeader>
       <TableRow>
-        <TableHead>Nome Locale/Partner</TableHead>
+        <TableHead>Partner</TableHead>
         <TableHead>Area</TableHead>
-        <TableHead>Grado di urgenza</TableHead>
+        <TableHead>Ranking</TableHead>
         <TableHead>Stazioni Richieste</TableHead>
-        <TableHead>Stazioni a budget</TableHead>
-        <TableHead>Gestore Area</TableHead>
+        <TableHead>Stazioni Allocate</TableHead>
+        <TableHead>Budget Area</TableHead>
+        <TableHead>Gestore</TableHead>
         <TableHead className="text-right">Azioni</TableHead>
       </TableRow>
     </TableHeader>

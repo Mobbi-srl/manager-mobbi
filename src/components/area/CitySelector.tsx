@@ -1,54 +1,125 @@
 
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { X } from "lucide-react";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from "@/components/ui/select";
 import { UseFormReturn } from "react-hook-form";
 import { AreaFormSchema } from "./schema";
-import { useState } from "react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { Database } from "@/integrations/supabase/types";
+import { useState, useMemo, useEffect } from "react";
+
+type RegioneItaliana = Database["public"]["Enums"]["regione_italiana"];
 
 interface CitySelectorProps {
   form: UseFormReturn<AreaFormSchema>;
   selectedRegione?: string;
-  selectedProvince?: string;
-  comuni: { nome: string; provincia: string; sigla: string }[];
+  selectedProvinces: string[];
   isLoading: boolean;
 }
 
 export const CitySelector = ({ 
   form, 
   selectedRegione, 
-  selectedProvince,
-  comuni, 
+  selectedProvinces,
   isLoading 
 }: CitySelectorProps) => {
-  const [selectedCity, setSelectedCity] = useState<string>("");
+  const [searchTerm, setSearchTerm] = useState("");
   
-  const addCity = (city: string) => {
-    if (!city) return;
-    
-    const currentCities = form.getValues("capoluoghi");
-    if (!currentCities.includes(city)) {
-      const updatedCities = [...currentCities, city];
-      form.setValue("capoluoghi", updatedCities);
-      form.trigger("capoluoghi");
+  console.log(`🔍 CitySelector: Rendering with ${selectedProvinces?.length || 0} provinces for region: ${selectedRegione || 'none'}`);
+  
+  // Fetch comuni data from Supabase based on selected region and provinces
+  const { data: comuniData, isLoading: isLoadingComuni } = useQuery({
+    queryKey: ['comuni', selectedRegione, selectedProvinces],
+    queryFn: async () => {
+      if (!selectedRegione || !selectedProvinces || selectedProvinces.length === 0) {
+        return [];
+      }
+      
+      console.log(`🔍 CitySelector: Fetching comuni for provinces:`, selectedProvinces);
+      
+      const { data, error } = await supabase
+        .from('comuni_italiani')
+        .select('nome, provincia, sigla_provincia')
+        .eq('regione', selectedRegione as RegioneItaliana)
+        .in('provincia', selectedProvinces)
+        .order('nome');
+      
+      if (error) {
+        console.error('❌ Error fetching comuni:', error);
+        throw error;
+      }
+      
+      // Remove duplicates based on nome (city name)
+      const uniqueComuni = data?.filter((comune, index, self) => 
+        index === self.findIndex(c => c.nome === comune.nome)
+      ) || [];
+      
+      console.log(`✅ Found ${uniqueComuni.length} unique comuni for selected provinces`);
+      console.log('🔍 CitySelector: Sample comuni from DB:', uniqueComuni.slice(0, 5).map(c => c.nome));
+      return uniqueComuni;
+    },
+    enabled: !!selectedRegione && selectedProvinces.length > 0,
+    staleTime: 300000, // 5 minutes
+  });
+  
+  // Watch for current form values - directly get the current value
+  const currentValues = form.watch("capoluoghi") || [];
+  
+  console.log('🔍 CitySelector: Current form values:', currentValues);
+  console.log('🔍 CitySelector: Type of current values:', typeof currentValues, Array.isArray(currentValues));
+  
+  // Extract comune names from the current values
+  const selectedComuniNames = useMemo(() => {
+    if (!currentValues || currentValues.length === 0) {
+      console.log('🔍 CitySelector: No current values');
+      return [];
     }
-    setSelectedCity("");
-  };
+    
+    // Always treat as array of strings (which is what we save in the database)
+    const names = Array.isArray(currentValues) ? currentValues : [];
+    console.log('🔍 CitySelector: Selected comuni names:', names);
+    return names;
+  }, [currentValues]);
   
-  const removeCity = (cityToRemove: string) => {
-    const currentCities = form.getValues("capoluoghi");
-    const updatedCities = currentCities.filter(city => city !== cityToRemove);
-    form.setValue("capoluoghi", updatedCities);
-    form.trigger("capoluoghi");
+  // Filter comuni based on search term
+  const filteredComuni = useMemo(() => {
+    if (!comuniData) return [];
+    
+    if (!searchTerm.trim()) return comuniData;
+    
+    return comuniData.filter(comune => 
+      comune.nome.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [comuniData, searchTerm]);
+  
+  const handleComuneToggle = (comuneName: string, checked: boolean) => {
+    console.log(`🔍 CitySelector: Toggling ${comuneName} to ${checked}`);
+    console.log(`🔍 CitySelector: Current selectedComuniNames:`, selectedComuniNames);
+    
+    let newValues: string[];
+    if (checked) {
+      newValues = [...selectedComuniNames, comuneName];
+    } else {
+      newValues = selectedComuniNames.filter(c => c !== comuneName);
+    }
+    
+    console.log(`🔍 CitySelector: Updating form with:`, newValues);
+    form.setValue("capoluoghi", newValues);
   };
+
+  // Debug effect to track changes
+  useEffect(() => {
+    console.log('🔍 CitySelector: Effect triggered');
+    console.log('🔍 CitySelector: selectedComuniNames:', selectedComuniNames);
+    console.log('🔍 CitySelector: comuniData length:', comuniData?.length || 0);
+    if (comuniData && comuniData.length > 0) {
+      console.log('🔍 CitySelector: Sample comuniData names:', comuniData.slice(0, 5).map(c => c.nome));
+    }
+  }, [selectedComuniNames, comuniData]);
+
+  const isComponentLoading = isLoading || isLoadingComuni;
+  const comuni = filteredComuni || [];
 
   return (
     <FormField
@@ -56,54 +127,77 @@ export const CitySelector = ({
       name="capoluoghi"
       render={({ field }) => (
         <FormItem>
-          <FormLabel>Comuni {selectedProvince ? ` (${selectedProvince})` : ""}</FormLabel>
-          
-          <div className="space-y-2">
-            <div className="flex flex-wrap gap-2 mb-2">
-              {field.value.map((city) => (
-                <Badge key={city} variant="secondary" className="flex items-center gap-1 px-3 py-1">
-                  {city}
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="h-4 w-4 p-0 rounded-full"
-                    onClick={() => removeCity(city)}
-                  >
-                    <X className="h-3 w-3" />
-                    <span className="sr-only">Remove</span>
-                  </Button>
-                </Badge>
-              ))}
-            </div>
-            
-            <FormControl>
-              <Select
-                disabled={!selectedProvince || isLoading}
-                value={selectedCity}
-                onValueChange={(val) => {
-                  setSelectedCity(val);
-                  addCity(val);
-                }}
-              >
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder={selectedProvince ? (isLoading ? "Caricamento..." : "Aggiungi un comune") : "Prima scegli una provincia"} />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent className="max-h-[200px] z-[10000]">
-                  {comuni && comuni.length > 0 ? comuni
-                    .filter(c => !field.value.includes(c.nome))
-                    .map(c => (
-                      <SelectItem key={c.nome} value={c.nome}>{c.nome}</SelectItem>
-                    )) : (
-                    <SelectItem disabled value="no_results">Nessun comune disponibile</SelectItem>
+          <FormLabel>
+            {selectedRegione && selectedProvinces.length > 0 
+              ? `Comuni (${selectedProvinces.join(', ')})` 
+              : "Comuni"}
+          </FormLabel>
+          <FormControl>
+            <div className="space-y-3">
+              {!selectedRegione ? (
+                <p className="text-sm text-muted-foreground">Prima scegli una regione</p>
+              ) : selectedProvinces.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Prima scegli almeno una provincia</p>
+              ) : isComponentLoading ? (
+                <p className="text-sm text-muted-foreground">Caricamento comuni...</p>
+              ) : (
+                <>
+                  {/* Search input */}
+                  <Input
+                    placeholder="Cerca un comune..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="mb-2"
+                  />
+                  
+                  {/* Selected comuni count */}
+                  {selectedComuniNames.length > 0 && (
+                    <p className="text-sm text-blue-600">
+                      {selectedComuniNames.length} comuni selezionati: {selectedComuniNames.join(', ')}
+                    </p>
                   )}
-                </SelectContent>
-              </Select>
-            </FormControl>
-          </div>
-          
+                  
+                  {/* Comuni list */}
+                  <div className="space-y-2 max-h-48 overflow-y-auto border rounded-md p-3">
+                    {comuni.length > 0 ? (
+                      comuni.map(comune => {
+                        // Normalize both names for comparison (trim and lowercase)
+                        const normalizedComuneName = comune.nome.trim();
+                        const isSelected = selectedComuniNames.some(selectedName => 
+                          selectedName.trim().toLowerCase() === normalizedComuneName.toLowerCase()
+                        );
+                        
+                        console.log(`🔍 CitySelector: Rendering ${normalizedComuneName}, selected: ${isSelected}`);
+                        console.log(`🔍 CitySelector: Comparing with selectedNames:`, selectedComuniNames.map(s => s.trim().toLowerCase()));
+                        
+                        return (
+                          <div key={comune.nome} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={`comune-${comune.nome}`}
+                              checked={isSelected}
+                              onCheckedChange={(checked) => 
+                                handleComuneToggle(normalizedComuneName, checked as boolean)
+                              }
+                            />
+                            <label
+                              htmlFor={`comune-${comune.nome}`}
+                              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                            >
+                              {normalizedComuneName} ({comune.sigla_provincia})
+                            </label>
+                          </div>
+                        );
+                      })
+                    ) : searchTerm ? (
+                      <p className="text-sm text-muted-foreground">Nessun comune trovato per "{searchTerm}"</p>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">Nessun comune trovato per le province selezionate</p>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+          </FormControl>
           <FormMessage />
         </FormItem>
       )}

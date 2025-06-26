@@ -9,19 +9,36 @@ export const usePlaceSelection = (form: UseFormReturn<PartnerFormValues>) => {
       console.warn("Invalid place data received");
       return;
     }
-    
+
     // Set the local name if available
     if (place.name) {
       console.log("Setting nome locale:", place.name);
       form.setValue("nomeLocale", place.name, { shouldValidate: true });
     }
-    
-    // Set formatted address if available
-    if (place.formatted_address) {
-      console.log("Setting indirizzo:", place.formatted_address);
-      form.setValue("indirizzo", place.formatted_address, { shouldValidate: true });
+
+    let streetNumber = "";
+    let route = "";
+
+    // Estrai street_number e route
+    if (place.address_components && place.address_components.length > 0) {
+      for (const component of place.address_components) {
+        const types = component.types;
+
+        if (types.includes("street_number")) {
+          streetNumber = component.short_name;
+        } else if (types.includes("route")) {
+          route = component.short_name;
+        }
+      }
     }
-    
+
+    const composedAddress = route && streetNumber ? `${route}, ${streetNumber}` : "";
+
+    if (composedAddress) {
+      console.log("Setting indirizzo personalizzato:", composedAddress);
+      form.setValue("indirizzo", composedAddress, { shouldValidate: true });
+    }
+
     // Extract address components if available
     if (place.address_components && place.address_components.length > 0) {
       let city = "";
@@ -29,7 +46,7 @@ export const usePlaceSelection = (form: UseFormReturn<PartnerFormValues>) => {
       let region = "";
       let country = "";
       let postalCode = "";
-      
+
       // Extract address components
       for (const component of place.address_components) {
         const types = component.types;
@@ -46,9 +63,9 @@ export const usePlaceSelection = (form: UseFormReturn<PartnerFormValues>) => {
           postalCode = component.long_name;
         }
       }
-      
+
       console.log("Extracted components:", { city, province, region, country, postalCode });
-      
+
       // Set the form values if components were found
       if (city) form.setValue("citta", city, { shouldValidate: true });
       if (province) form.setValue("provincia", province, { shouldValidate: true });
@@ -56,7 +73,7 @@ export const usePlaceSelection = (form: UseFormReturn<PartnerFormValues>) => {
       if (country) form.setValue("nazione", country, { shouldValidate: true });
       if (postalCode) form.setValue("cap", postalCode, { shouldValidate: true });
     }
-    
+
     // If we don't have complete address data but have a name and formatted_address, 
     // still attempt to fill city field with a best guess
     if (!place.address_components && place.formatted_address) {
@@ -64,7 +81,7 @@ export const usePlaceSelection = (form: UseFormReturn<PartnerFormValues>) => {
       if (addressParts.length >= 2) {
         const cityPart = addressParts[addressParts.length - 2].trim();
         form.setValue("citta", cityPart, { shouldValidate: true });
-        
+
         // Try to extract province if it's in the format "City, PR, Country"
         if (addressParts.length >= 3) {
           const provincePart = addressParts[addressParts.length - 3].trim();
@@ -72,7 +89,7 @@ export const usePlaceSelection = (form: UseFormReturn<PartnerFormValues>) => {
             form.setValue("provincia", provincePart, { shouldValidate: true });
           }
         }
-        
+
         // Try to extract country
         if (addressParts.length >= 1) {
           const countryPart = addressParts[addressParts.length - 1].trim();

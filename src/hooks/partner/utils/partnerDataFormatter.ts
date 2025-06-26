@@ -50,13 +50,13 @@ export const formatPartnerData = (formValues: PartnerFormValues, creatorInfo: an
     citta_operativa: formValues.citta,
     provincia_operativa: formValues.provincia,
     regione_operativa: formValues.regione,
-    cap_operativa: formValues.cap ? parseInt(formValues.cap) : null,
+    cap_operativa: formValues.cap || null, // Keep as string
     nazione_operativa: formValues.nazione,
     indirizzo_legale: formValues.indirizzoLegale,
     citta_legale: formValues.cittaLegale,
     provincia_legale: formValues.provinciaLegale,
     regione_legale: formValues.regioneLegale,
-    cap_legale: formValues.capLegale ? parseInt(formValues.capLegale) : null,
+    cap_legale: formValues.capLegale || null, // Keep as string
     nazione_legale: formValues.nazioneLegale,
     piva: formValues.piva,
     sdi: formValues.sdi,
@@ -65,6 +65,7 @@ export const formatPartnerData = (formValues: PartnerFormValues, creatorInfo: an
     tipologia_locale_id: formValues.tipologiaLocale,
     richiesta_stazioni: richiestaStazioniData, // Send array directly without stringify
     area_id: formValues.areaId || null,
+    note: formValues.note || null, // Add note field
     segnalato_da: creatorInfo.userId,
     codice_utente_segnalatore: creatorInfo.userDisplayName
   };

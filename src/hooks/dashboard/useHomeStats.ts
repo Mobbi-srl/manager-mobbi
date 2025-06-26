@@ -13,7 +13,7 @@ export const useHomeStats = () => {
   
   const aree = useQuery({
     queryKey: ["aree_geografiche", "attive", user?.id],
-    queryFn: async () => {
+    queryFn: async (): Promise<number> => {
       // If user is a Gestore, count only their assigned areas
       if (isGestoreRole && userAreas) {
         const areaIds = userAreas.map(area => area.id);
@@ -51,7 +51,7 @@ export const useHomeStats = () => {
   
   const partner = useQuery({
     queryKey: ["partner", "tutti"],
-    queryFn: async () => {
+    queryFn: async (): Promise<number> => {
       const { count, error } = await supabase
         .from("partner")
         .select("*", { count: "exact", head: true });
@@ -67,11 +67,11 @@ export const useHomeStats = () => {
   
   const stazioni = useQuery({
     queryKey: ["stazioni", "operative"],
-    queryFn: async () => {
+    queryFn: async (): Promise<number> => {
       const { count, error } = await supabase
         .from("stazioni")
         .select("*", { count: "exact", head: true })
-        .eq("stato", true);
+        .eq("attiva", true);
         
       if (error) {
         return 0;
@@ -84,7 +84,7 @@ export const useHomeStats = () => {
 
   const stazioniDisponibili = useQuery({
     queryKey: ["aree_geografiche", "numero_stazioni", user?.id],
-    queryFn: async () => {
+    queryFn: async (): Promise<number> => {
       // If user is a Gestore, sum only stations from their assigned areas
       if (isGestoreRole && userAreas) {
         if (userAreas.length === 0) return 0;
@@ -101,7 +101,8 @@ export const useHomeStats = () => {
           return 0;
         }
         
-        return data.reduce((total: number, row: any) => total + (row.numero_stazioni || 0), 0);
+        return data.reduce((total: number, row: { numero_stazioni: number | null }) => 
+          total + (row.numero_stazioni || 0), 0);
       } else {
         // For non-Gestore roles, sum stations from all areas
         const { data, error } = await supabase
@@ -111,7 +112,8 @@ export const useHomeStats = () => {
           
         if (error || !data) return 0;
         
-        return data.reduce((total: number, row: any) => total + (row.numero_stazioni || 0), 0);
+        return data.reduce((total: number, row: { numero_stazioni: number | null }) => 
+          total + (row.numero_stazioni || 0), 0);
       }
     },
     staleTime: 60000,

@@ -1,6 +1,6 @@
+
 import React, { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogTitle, DialogHeader, DialogFooter, DialogTrigger, DialogClose } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogTitle, DialogHeader } from "@/components/ui/dialog";
 import { useCreateArea, AreaFormData } from "@/hooks/area";
 import AreaForm from "./AreaForm";
 
@@ -9,7 +9,7 @@ interface AreaFormModalProps {
 }
 
 const AreaFormModal: React.FC<AreaFormModalProps> = ({ onAreaCreated }) => {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(true);
   const createArea = useCreateArea();
 
   // Reset the form when the modal closes
@@ -31,17 +31,19 @@ const AreaFormModal: React.FC<AreaFormModalProps> = ({ onAreaCreated }) => {
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        <Button variant="default" className="mb-2 w-full md:w-auto">
-          + Nuova Area
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="z-[9999]">
-        <DialogHeader>
+    <Dialog open={isOpen} onOpenChange={(open) => {
+      setIsOpen(open);
+      if (!open && onAreaCreated) {
+        onAreaCreated();
+      }
+    }}>
+      <DialogContent className="z-[9999] max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle>Nuova Area Geografica</DialogTitle>
         </DialogHeader>
-        <AreaForm onSubmit={handleSubmit} isSubmitting={createArea.isPending} />
+        <div className="flex-1 overflow-y-auto pr-2">
+          <AreaForm onSubmit={handleSubmit} isSubmitting={createArea.isPending} />
+        </div>
       </DialogContent>
     </Dialog>
   );

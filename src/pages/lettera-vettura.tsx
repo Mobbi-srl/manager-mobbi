@@ -23,7 +23,7 @@ interface Installazione {
     nome_locale: string;
     indirizzo_operativa: string;
     citta_operativa: string;
-    cap_operativa: number;
+    cap_operativa: string; // Changed from number to string
   } | null;
   referente: {
     nome: string;

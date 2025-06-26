@@ -29,7 +29,7 @@ export const TipologiaLocaleField: React.FC<TipologiaLocaleFieldProps> = ({ form
   if (isLoading) {
     return (
       <div className="space-y-4 border-t pt-4 mt-6">
-        <h3 className="text-lg font-medium mb-3">Tipologia e Grado di urgenza</h3>
+        <h3 className="text-lg font-medium mb-3">Tipologia e Valutazione</h3>
         <Skeleton className="h-10 w-full" />
         <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
           {Array(7).fill(0).map((_, i) => (
@@ -43,7 +43,7 @@ export const TipologiaLocaleField: React.FC<TipologiaLocaleFieldProps> = ({ form
   if (error) {
     return (
       <div className="space-y-4 border-t pt-4 mt-6">
-        <h3 className="text-lg font-medium mb-3">Tipologia e Grado di urgenza</h3>
+        <h3 className="text-lg font-medium mb-3">Tipologia e Valutazione</h3>
         <div className="text-destructive">Errore: {error}</div>
       </div>
     );
@@ -51,7 +51,7 @@ export const TipologiaLocaleField: React.FC<TipologiaLocaleFieldProps> = ({ form
 
   return (
     <div className="space-y-4 border-t pt-4 mt-6">
-      <h3 className="text-lg font-medium mb-3">Tipologia e Grado di urgenza</h3>
+      <h3 className="text-lg font-medium mb-3">Tipologia e Valutazione</h3>
 
       <FormField
         control={form.control}
@@ -85,18 +85,18 @@ export const TipologiaLocaleField: React.FC<TipologiaLocaleFieldProps> = ({ form
         name="ranking"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Grado di urgenza (1-10)</FormLabel>
+            <FormLabel>Valutazione (1-10) <span className="text-destructive">*</span></FormLabel>
             <FormControl>
               <Input
                 type="number"
                 min="1"
                 max="10"
-                placeholder="Grado di urgenza da 1 a 10"
+                placeholder="Valutazione da 1 a 10"
                 value={field.value === null || field.value === undefined ? '' : field.value}
                 onChange={(e) => {
                   const val = e.target.valueAsNumber;
                   field.onChange(isNaN(val) ? null : val);
-                  console.log("Grado di urgenza field changed to:", isNaN(val) ? null : val);
+                  console.log("Valutazione field changed to:", isNaN(val) ? null : val);
                 }}
                 onBlur={() => {
                   console.log("Current ranking value after blur:", field.value);
@@ -104,7 +104,7 @@ export const TipologiaLocaleField: React.FC<TipologiaLocaleFieldProps> = ({ form
               />
             </FormControl>
             <FormDescription>
-              Assegna un grado di urgenza al partner da 1 (più basso) a 10 (più alto)
+              Assegna una valutazione al partner da 1 (più basso) a 10 (più alto)
             </FormDescription>
             <FormMessage />
           </FormItem>

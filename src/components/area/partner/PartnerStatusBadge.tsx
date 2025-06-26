@@ -1,27 +1,55 @@
 
 import React from "react";
 import { Badge } from "@/components/ui/badge";
-import { StatoPartner } from "@/hooks/partner/types";
 
 interface PartnerStatusBadgeProps {
   status: string;
 }
 
 const PartnerStatusBadge: React.FC<PartnerStatusBadgeProps> = ({ status }) => {
-  switch (status as StatoPartner) {
-    case StatoPartner.APPROVATO:
-      return <Badge variant="outline" className="bg-purple-500/10 text-purple-500">APPROVATO</Badge>;
-    case StatoPartner.SELEZIONATO:
-      return <Badge variant="outline" className="bg-amber-500/10 text-amber-500">SELEZIONATO</Badge>;
-    case StatoPartner.ALLOCATO:
-      return <Badge variant="outline" className="bg-indigo-500/10 text-indigo-500">ALLOCATO</Badge>;
-    case StatoPartner.CONTRATTUALIZZATO:
-      return <Badge variant="outline" className="bg-emerald-500/10 text-emerald-500">CONTRATTUALIZZATO</Badge>;
-    case StatoPartner.PERSO:
-      return <Badge variant="outline" className="bg-red-500/10 text-red-500">PERSO</Badge>;
-    default:
-      return <Badge variant="outline">{status || "N/D"}</Badge>;
-  }
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "CONTATTO":
+        return "bg-blue-500/10 text-blue-500";
+      case "APPROVATO":
+        return "bg-orange-500/10 text-orange-500";
+      case "SELEZIONATO":
+        return "bg-amber-500/10 text-amber-500";
+      case "ALLOCATO":
+        return "bg-indigo-500/10 text-indigo-500";
+      case "CONTRATUALIZZATO":
+        return "bg-green-500/10 text-green-500";
+      case "PERSO":
+        return "bg-red-500/10 text-red-500";
+      default:
+        return "bg-gray-500/10 text-gray-500";
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case "CONTATTO":
+        return "Contatto";
+      case "APPROVATO":
+        return "Approvato";
+      case "SELEZIONATO":
+        return "Selezionato";
+      case "ALLOCATO":
+        return "Allocato";
+      case "CONTRATUALIZZATO":
+        return "Contrattualizzato";
+      case "PERSO":
+        return "Perso";
+      default:
+        return status;
+    }
+  };
+
+  return (
+    <Badge variant="outline" className={getStatusColor(status)}>
+      {getStatusLabel(status)}
+    </Badge>
+  );
 };
 
 export default PartnerStatusBadge;

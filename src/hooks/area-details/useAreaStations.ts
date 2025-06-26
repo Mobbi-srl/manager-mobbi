@@ -7,24 +7,53 @@ export const useAreaStations = (areaId: string) => {
   const { data, isLoading, error } = useQuery({
     queryKey: ["area_stations", areaId],
     queryFn: async () => {
-      if (!areaId) return [];
+      console.log(`🔍 useAreaStations: Fetching stations for area ${areaId}`);
       
-      // In a real implementation, this would fetch from the stazioni table
-      // For now, we're simulating the data
-      const { data, error } = await supabase
+      let query = supabase
         .from("stazioni")
         .select(`
           id,
           modello,
-          numero_stazione,
+          numero_seriale,
           colore,
           slot_disponibili,
           partner_id,
-          stato
-        `)
-        .limit(10);
+          attiva,
+          documento_allegato
+        `);
       
-      if (error) throw error;
+      // Se areaId è fornito, filtra per quell'area specifica
+      // altrimenti recupera tutte le stazioni
+      if (areaId) {
+        // Prima ottieni i partner dell'area
+        const { data: areaPartners, error: areaError } = await supabase
+          .from("partner")
+          .select("id")
+          .eq("area_id", areaId);
+          
+        if (areaError) {
+          console.error(`❌ Error fetching area partners for ${areaId}:`, areaError);
+          throw areaError;
+        }
+        
+        const partnerIds = areaPartners?.map(p => p.id) || [];
+        
+        if (partnerIds.length === 0) {
+          console.log(`ℹ️ No partners found for area ${areaId}`);
+          return [];
+        }
+        
+        query = query.in("partner_id", partnerIds);
+      }
+      
+      const { data, error } = await query;
+      
+      if (error) {
+        console.error(`❌ Error fetching stations:`, error);
+        throw error;
+      }
+      
+      console.log(`✅ Found ${data?.length || 0} stations${areaId ? ` for area ${areaId}` : ''}`);
       
       // Get partner names for the stations
       const partnerIds = data.map(s => s.partner_id).filter(Boolean);
@@ -47,15 +76,16 @@ export const useAreaStations = (areaId: string) => {
       return data.map(station => ({
         id: station.id,
         modello: station.modello,
-        seriale: `SN-${station.numero_stazione || Math.floor(Math.random() * 10000)}`,
+        seriale: station.numero_seriale || `SN-${Math.floor(Math.random() * 10000)}`,
         colore: station.colore,
         slot_disponibili: station.slot_disponibili || 0,
         partner_nome: station.partner_id ? partnerNames[station.partner_id] : "-",
-        stato: station.stato ? (station.stato === true ? "Attiva" : "Inattiva") : 
-               Math.random() > 0.7 ? "Manutenzione" : "Attiva"
+        stato: station.attiva ? "Attiva" : 
+               Math.random() > 0.7 ? "Manutenzione" : "Inattiva",
+        documento_allegato: station.documento_allegato
       })) as AreaStation[];
     },
-    enabled: !!areaId
+    enabled: true
   });
   
   return {

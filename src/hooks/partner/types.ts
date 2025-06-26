@@ -1,3 +1,4 @@
+
 // Common types for partner-related hooks
 export interface Contatto {
   id: string;
@@ -71,6 +72,7 @@ export interface PartnerFormValues {
   richiestaStazioni: any[];
   areaId?: string; // New field for the area selection
   ranking?: number; // Added ranking field
+  note?: string; // New note field
 }
 
 export interface ContattoFormValues {

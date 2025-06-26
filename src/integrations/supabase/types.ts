@@ -131,6 +131,7 @@ export type Database = {
           id: string
           nome: string
           numero_stazioni: number | null
+          province: string[] | null
           provincia: string | null
           regione: Database["public"]["Enums"]["regione_italiana"]
           stato: string | null
@@ -141,6 +142,7 @@ export type Database = {
           id?: string
           nome: string
           numero_stazioni?: number | null
+          province?: string[] | null
           provincia?: string | null
           regione: Database["public"]["Enums"]["regione_italiana"]
           stato?: string | null
@@ -151,6 +153,7 @@ export type Database = {
           id?: string
           nome?: string
           numero_stazioni?: number | null
+          province?: string[] | null
           provincia?: string | null
           regione?: Database["public"]["Enums"]["regione_italiana"]
           stato?: string | null
@@ -225,25 +228,49 @@ export type Database = {
       }
       comuni_italiani: {
         Row: {
+          cap: string | null
+          codice_catastale: string | null
+          coordinate_lat: number | null
+          coordinate_lng: number | null
+          created_at: string | null
           id: string
           is_capoluogo: boolean | null
           nome: string
-          provincia: string | null
+          prefisso: string | null
+          provincia: string
           regione: Database["public"]["Enums"]["regione_italiana"]
+          sigla_provincia: string
+          updated_at: string | null
         }
         Insert: {
+          cap?: string | null
+          codice_catastale?: string | null
+          coordinate_lat?: number | null
+          coordinate_lng?: number | null
+          created_at?: string | null
           id?: string
           is_capoluogo?: boolean | null
           nome: string
-          provincia?: string | null
+          prefisso?: string | null
+          provincia: string
           regione: Database["public"]["Enums"]["regione_italiana"]
+          sigla_provincia: string
+          updated_at?: string | null
         }
         Update: {
+          cap?: string | null
+          codice_catastale?: string | null
+          coordinate_lat?: number | null
+          coordinate_lng?: number | null
+          created_at?: string | null
           id?: string
           is_capoluogo?: boolean | null
           nome?: string
-          provincia?: string | null
+          prefisso?: string | null
+          provincia?: string
           regione?: Database["public"]["Enums"]["regione_italiana"]
+          sigla_provincia?: string
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -320,6 +347,44 @@ export type Database = {
           tipologia_locale?: string | null
         }
         Relationships: []
+      }
+      contatti_no_area: {
+        Row: {
+          cognome: string | null
+          email: string | null
+          id: string
+          nome: string | null
+          numero: string | null
+          partner_id: string | null
+          ruolo: string | null
+        }
+        Insert: {
+          cognome?: string | null
+          email?: string | null
+          id?: string
+          nome?: string | null
+          numero?: string | null
+          partner_id?: string | null
+          ruolo?: string | null
+        }
+        Update: {
+          cognome?: string | null
+          email?: string | null
+          id?: string
+          nome?: string | null
+          numero?: string | null
+          partner_id?: string | null
+          ruolo?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contatti_no_area_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partner_no_area"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       installazioni: {
         Row: {
@@ -469,9 +534,9 @@ export type Database = {
       partner: {
         Row: {
           area_id: string | null
-          cap_legale: number | null
-          cap_operativa: number | null
-          cap_residenza_rapp_legale: number | null
+          cap_legale: string | null
+          cap_operativa: string | null
+          cap_residenza_rapp_legale: string | null
           citta_legale: string | null
           citta_operativa: string | null
           citta_residenza_rapp_legale: string | null
@@ -480,6 +545,7 @@ export type Database = {
           cognome_rapp_legale: string | null
           comune_operativa_id: string | null
           contratto_firmato: string | null
+          data_installazione_richiesta: string | null
           data_nascita_rapp_legale: string | null
           email: string | null
           id: string
@@ -492,6 +558,7 @@ export type Database = {
           nazione_residenza_rapp_legale: string | null
           nome_locale: string | null
           nome_rapp_legale: string | null
+          note: string | null
           numero_locali: number | null
           pec: string | null
           piva: string | null
@@ -506,14 +573,15 @@ export type Database = {
           sdi: string | null
           segnalato_da: string | null
           stato: Database["public"]["Enums"]["stato_partner"]
+          stazioni_allocate: Json | null
           telefono: string | null
           tipologia_locale_id: string | null
         }
         Insert: {
           area_id?: string | null
-          cap_legale?: number | null
-          cap_operativa?: number | null
-          cap_residenza_rapp_legale?: number | null
+          cap_legale?: string | null
+          cap_operativa?: string | null
+          cap_residenza_rapp_legale?: string | null
           citta_legale?: string | null
           citta_operativa?: string | null
           citta_residenza_rapp_legale?: string | null
@@ -522,6 +590,7 @@ export type Database = {
           cognome_rapp_legale?: string | null
           comune_operativa_id?: string | null
           contratto_firmato?: string | null
+          data_installazione_richiesta?: string | null
           data_nascita_rapp_legale?: string | null
           email?: string | null
           id?: string
@@ -534,6 +603,7 @@ export type Database = {
           nazione_residenza_rapp_legale?: string | null
           nome_locale?: string | null
           nome_rapp_legale?: string | null
+          note?: string | null
           numero_locali?: number | null
           pec?: string | null
           piva?: string | null
@@ -548,14 +618,15 @@ export type Database = {
           sdi?: string | null
           segnalato_da?: string | null
           stato?: Database["public"]["Enums"]["stato_partner"]
+          stazioni_allocate?: Json | null
           telefono?: string | null
           tipologia_locale_id?: string | null
         }
         Update: {
           area_id?: string | null
-          cap_legale?: number | null
-          cap_operativa?: number | null
-          cap_residenza_rapp_legale?: number | null
+          cap_legale?: string | null
+          cap_operativa?: string | null
+          cap_residenza_rapp_legale?: string | null
           citta_legale?: string | null
           citta_operativa?: string | null
           citta_residenza_rapp_legale?: string | null
@@ -564,6 +635,7 @@ export type Database = {
           cognome_rapp_legale?: string | null
           comune_operativa_id?: string | null
           contratto_firmato?: string | null
+          data_installazione_richiesta?: string | null
           data_nascita_rapp_legale?: string | null
           email?: string | null
           id?: string
@@ -576,6 +648,7 @@ export type Database = {
           nazione_residenza_rapp_legale?: string | null
           nome_locale?: string | null
           nome_rapp_legale?: string | null
+          note?: string | null
           numero_locali?: number | null
           pec?: string | null
           piva?: string | null
@@ -590,6 +663,7 @@ export type Database = {
           sdi?: string | null
           segnalato_da?: string | null
           stato?: Database["public"]["Enums"]["stato_partner"]
+          stazioni_allocate?: Json | null
           telefono?: string | null
           tipologia_locale_id?: string | null
         }
@@ -616,20 +690,6 @@ export type Database = {
             referencedColumns: ["area_id"]
           },
           {
-            foreignKeyName: "partner_comune_operativa_id_fkey"
-            columns: ["comune_operativa_id"]
-            isOneToOne: false
-            referencedRelation: "comuni_italiani"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "partner_comune_operativa_id_fkey"
-            columns: ["comune_operativa_id"]
-            isOneToOne: false
-            referencedRelation: "comuni_view"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "partner_segnalato_da_fkey"
             columns: ["segnalato_da"]
             isOneToOne: false
@@ -652,51 +712,272 @@ export type Database = {
           },
         ]
       }
+      partner_documenti: {
+        Row: {
+          caricato_da: string | null
+          caricato_il: string
+          dimensione_file: number | null
+          id: string
+          nome_file: string
+          partner_id: string
+          tipo_documento: string
+          tipo_mime: string | null
+          url_file: string
+        }
+        Insert: {
+          caricato_da?: string | null
+          caricato_il?: string
+          dimensione_file?: number | null
+          id?: string
+          nome_file: string
+          partner_id: string
+          tipo_documento: string
+          tipo_mime?: string | null
+          url_file: string
+        }
+        Update: {
+          caricato_da?: string | null
+          caricato_il?: string
+          dimensione_file?: number | null
+          id?: string
+          nome_file?: string
+          partner_id?: string
+          tipo_documento?: string
+          tipo_mime?: string | null
+          url_file?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_documenti_caricato_da_fkey"
+            columns: ["caricato_da"]
+            isOneToOne: false
+            referencedRelation: "anagrafica_utenti"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_documenti_caricato_da_fkey"
+            columns: ["caricato_da"]
+            isOneToOne: false
+            referencedRelation: "vw_utenti_aree"
+            referencedColumns: ["utente_id"]
+          },
+          {
+            foreignKeyName: "partner_documenti_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partner"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      partner_no_area: {
+        Row: {
+          cap_legale: string | null
+          cap_operativa: string | null
+          cap_residenza_rapp_legale: string | null
+          citta_legale: string | null
+          citta_operativa: string | null
+          citta_residenza_rapp_legale: string | null
+          codice_fiscale_rapp_legale: string | null
+          codice_utente_segnalatore: string | null
+          cognome_rapp_legale: string | null
+          comune_operativa_id: string | null
+          contratto_firmato: string | null
+          data_installazione_richiesta: string | null
+          data_nascita_rapp_legale: string | null
+          email: string | null
+          id: string
+          indirizzo_legale: string | null
+          indirizzo_operativa: string | null
+          indirizzo_residenza_rapp_legale: string | null
+          luogo_nascita_rapp_legale: string | null
+          nazione_legale: string | null
+          nazione_operativa: string | null
+          nazione_residenza_rapp_legale: string | null
+          nome_locale: string | null
+          nome_rapp_legale: string | null
+          note: string | null
+          numero_locali: number | null
+          pec: string | null
+          piva: string | null
+          provincia_legale: string | null
+          provincia_operativa: string | null
+          ragione_sociale: string | null
+          ranking: number | null
+          ranking_confirmed: boolean | null
+          regione_legale: string | null
+          regione_operativa: string | null
+          richiesta_stazioni: Json | null
+          sdi: string | null
+          segnalato_da: string | null
+          stato: Database["public"]["Enums"]["stato_partner"]
+          stazioni_allocate: Json | null
+          telefono: string | null
+          tipologia_locale_id: string | null
+        }
+        Insert: {
+          cap_legale?: string | null
+          cap_operativa?: string | null
+          cap_residenza_rapp_legale?: string | null
+          citta_legale?: string | null
+          citta_operativa?: string | null
+          citta_residenza_rapp_legale?: string | null
+          codice_fiscale_rapp_legale?: string | null
+          codice_utente_segnalatore?: string | null
+          cognome_rapp_legale?: string | null
+          comune_operativa_id?: string | null
+          contratto_firmato?: string | null
+          data_installazione_richiesta?: string | null
+          data_nascita_rapp_legale?: string | null
+          email?: string | null
+          id?: string
+          indirizzo_legale?: string | null
+          indirizzo_operativa?: string | null
+          indirizzo_residenza_rapp_legale?: string | null
+          luogo_nascita_rapp_legale?: string | null
+          nazione_legale?: string | null
+          nazione_operativa?: string | null
+          nazione_residenza_rapp_legale?: string | null
+          nome_locale?: string | null
+          nome_rapp_legale?: string | null
+          note?: string | null
+          numero_locali?: number | null
+          pec?: string | null
+          piva?: string | null
+          provincia_legale?: string | null
+          provincia_operativa?: string | null
+          ragione_sociale?: string | null
+          ranking?: number | null
+          ranking_confirmed?: boolean | null
+          regione_legale?: string | null
+          regione_operativa?: string | null
+          richiesta_stazioni?: Json | null
+          sdi?: string | null
+          segnalato_da?: string | null
+          stato?: Database["public"]["Enums"]["stato_partner"]
+          stazioni_allocate?: Json | null
+          telefono?: string | null
+          tipologia_locale_id?: string | null
+        }
+        Update: {
+          cap_legale?: string | null
+          cap_operativa?: string | null
+          cap_residenza_rapp_legale?: string | null
+          citta_legale?: string | null
+          citta_operativa?: string | null
+          citta_residenza_rapp_legale?: string | null
+          codice_fiscale_rapp_legale?: string | null
+          codice_utente_segnalatore?: string | null
+          cognome_rapp_legale?: string | null
+          comune_operativa_id?: string | null
+          contratto_firmato?: string | null
+          data_installazione_richiesta?: string | null
+          data_nascita_rapp_legale?: string | null
+          email?: string | null
+          id?: string
+          indirizzo_legale?: string | null
+          indirizzo_operativa?: string | null
+          indirizzo_residenza_rapp_legale?: string | null
+          luogo_nascita_rapp_legale?: string | null
+          nazione_legale?: string | null
+          nazione_operativa?: string | null
+          nazione_residenza_rapp_legale?: string | null
+          nome_locale?: string | null
+          nome_rapp_legale?: string | null
+          note?: string | null
+          numero_locali?: number | null
+          pec?: string | null
+          piva?: string | null
+          provincia_legale?: string | null
+          provincia_operativa?: string | null
+          ragione_sociale?: string | null
+          ranking?: number | null
+          ranking_confirmed?: boolean | null
+          regione_legale?: string | null
+          regione_operativa?: string | null
+          richiesta_stazioni?: Json | null
+          sdi?: string | null
+          segnalato_da?: string | null
+          stato?: Database["public"]["Enums"]["stato_partner"]
+          stazioni_allocate?: Json | null
+          telefono?: string | null
+          tipologia_locale_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_no_area_segnalato_da_fkey"
+            columns: ["segnalato_da"]
+            isOneToOne: false
+            referencedRelation: "anagrafica_utenti"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_no_area_segnalato_da_fkey"
+            columns: ["segnalato_da"]
+            isOneToOne: false
+            referencedRelation: "vw_utenti_aree"
+            referencedColumns: ["utente_id"]
+          },
+          {
+            foreignKeyName: "partner_no_area_tipologia_locale_id_fkey"
+            columns: ["tipologia_locale_id"]
+            isOneToOne: false
+            referencedRelation: "locali"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stazioni: {
         Row: {
+          attiva: boolean | null
           colore: string | null
           colore_id: string | null
           data_ingresso: string | null
           documenti: string | null
+          documento_allegato: string | null
           fornitore: string | null
           id: string
           manutenzione: boolean | null
           modello: string | null
           modello_id: string | null
-          numero_stazione: number | null
+          numero_seriale: string | null
           partner_id: string | null
           slot_disponibili: number | null
-          stato: boolean | null
+          stato_stazione: string | null
         }
         Insert: {
+          attiva?: boolean | null
           colore?: string | null
           colore_id?: string | null
           data_ingresso?: string | null
           documenti?: string | null
+          documento_allegato?: string | null
           fornitore?: string | null
           id?: string
           manutenzione?: boolean | null
           modello?: string | null
           modello_id?: string | null
-          numero_stazione?: number | null
+          numero_seriale?: string | null
           partner_id?: string | null
           slot_disponibili?: number | null
-          stato?: boolean | null
+          stato_stazione?: string | null
         }
         Update: {
+          attiva?: boolean | null
           colore?: string | null
           colore_id?: string | null
           data_ingresso?: string | null
           documenti?: string | null
+          documento_allegato?: string | null
           fornitore?: string | null
           id?: string
           manutenzione?: boolean | null
           modello?: string | null
           modello_id?: string | null
-          numero_stazione?: number | null
+          numero_seriale?: string | null
           partner_id?: string | null
           slot_disponibili?: number | null
-          stato?: boolean | null
+          stato_stazione?: string | null
         }
         Relationships: [
           {
@@ -784,24 +1065,6 @@ export type Database = {
         }
         Relationships: []
       }
-      comuni_view: {
-        Row: {
-          id: string | null
-          nome: string | null
-          regione: Database["public"]["Enums"]["regione_italiana"] | null
-        }
-        Insert: {
-          id?: string | null
-          nome?: string | null
-          regione?: Database["public"]["Enums"]["regione_italiana"] | null
-        }
-        Update: {
-          id?: string | null
-          nome?: string | null
-          regione?: Database["public"]["Enums"]["regione_italiana"] | null
-        }
-        Relationships: []
-      }
       vw_utenti_aree: {
         Row: {
           area_id: string | null
@@ -854,6 +1117,7 @@ export type Database = {
         | "ALLOCATO"
         | "CONTRATTUALIZZATO"
         | "PERSO"
+        | "ATTIVO"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1005,6 +1269,7 @@ export const Constants = {
         "ALLOCATO",
         "CONTRATTUALIZZATO",
         "PERSO",
+        "ATTIVO",
       ],
     },
   },

@@ -10,7 +10,8 @@ const AreaTableHeader: React.FC = () => {
         <TableHead>Regione</TableHead>
         <TableHead>Budget</TableHead>
         <TableHead>Richieste</TableHead>
-        <TableHead>Assegnate</TableHead>
+        <TableHead>Allocate</TableHead>
+        <TableHead>Contratualizzate</TableHead>
         <TableHead>Stato</TableHead>
         <TableHead className="text-right">Azioni</TableHead>
       </TableRow>

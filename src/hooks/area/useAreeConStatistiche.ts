@@ -64,95 +64,77 @@ export const useAreeConStatistiche = () => {
 
             // If we have partners, calculate statistics
             if (partnerIds.length > 0) {
-              // Get detailed partner information to calculate requested stations
+              // Get detailed partner information to calculate requested and allocated stations
               const { data: partners, error: partnerDataError } = await supabase
                 .from("partner")
-                .select("id, richiesta_stazioni")
+                .select("id, richiesta_stazioni, stazioni_allocate")
                 .in("id", partnerIds);
 
               if (partnerDataError) {
                 console.error(`❌ useAreeConStatistiche: Error fetching detailed partner info for area ${area.nome}:`, partnerDataError);
               }
 
-              // if (partners && partners.length > 0) {
-              //   console.log(`🔍 useAreeConStatistiche: Calculating requested stations for ${partners.length} partners in ${area.nome}`);
-              //   console.log("Partner data:", JSON.stringify(partners, null, 2));
-
-              //   // Calculate requested stations
-              //   partners.forEach((partner) => {
-              //     if (partner.richiesta_stazioni && Array.isArray(partner.richiesta_stazioni)) {
-              //       console.log(`🔍 Partner ${partner.id} has richiesta_stazioni:`, partner.richiesta_stazioni);
-
-              //       partner.richiesta_stazioni.forEach((stazione: any) => {
-              //         const quantity = parseInt(stazione.quantity || "0", 10);
-              //         if (!isNaN(quantity)) {
-              //           stazioni_richieste += quantity;
-              //           console.log(`Adding ${quantity} stations from partner ${partner.id}, running total: ${stazioni_richieste}`);
-              //         }
-              //       });
-              //     } else {
-              //       console.log(`🔍 Partner ${partner.id} has no valid richiesta_stazioni:`, partner.richiesta_stazioni);
-              //     }
-              //   });
-
-              //   console.log(`✅ useAreeConStatistiche: Total requested stations for area ${area.nome}: ${stazioni_richieste}`);
-              // }
-
               if (partners && partners.length > 0) {
-                console.log(`🔍 useAreeConStatistiche: Calculating requested stations for ${partners.length} partners in ${area.nome}`);
+                console.log(`🔍 useAreeConStatistiche: Calculating stations for ${partners.length} partners in ${area.nome}`);
                 console.log("Partner data:", JSON.stringify(partners, null, 2));
 
                 partners.forEach((partner) => {
+                  // Calculate requested stations
                   let richieste: any[] = [];
 
-                  // Caso 1: richiesta_stazioni è una stringa (vecchi dati)
+                  // Handle richiesta_stazioni (string or array)
                   if (typeof partner.richiesta_stazioni === "string") {
                     try {
                       const parsed = JSON.parse(partner.richiesta_stazioni);
                       if (Array.isArray(parsed)) {
                         richieste = parsed;
-                      } else {
-                        console.warn(`⚠️ partner ${partner.id} ha una stringa richiesta_stazioni ma non è un array valido:`, parsed);
                       }
                     } catch (e) {
                       console.error(`❌ Errore nel parsing di richiesta_stazioni per partner ${partner.id}:`, e);
                     }
-
-                    // Caso 2: richiesta_stazioni è già un array (nuovi dati)
                   } else if (Array.isArray(partner.richiesta_stazioni)) {
                     richieste = partner.richiesta_stazioni;
-
-                    // Caso 3: altro formato non previsto
-                  } else {
-                    console.warn(`⚠️ partner ${partner.id} ha un formato richiesta_stazioni non gestito:`, partner.richiesta_stazioni);
                   }
 
-                  // Elaborazione delle richieste
+                  // Sum requested stations
                   richieste.forEach((stazione) => {
                     const quantity = parseInt(stazione.quantity || "0", 10);
                     if (!isNaN(quantity)) {
                       stazioni_richieste += quantity;
-                      console.log(`➕ Partner ${partner.id} aggiunge ${quantity} stazioni. Totale provvisorio: ${stazioni_richieste}`);
+                    }
+                  });
+
+                  // Calculate allocated stations from stazioni_allocate
+                  let allocate: any[] = [];
+                  
+                  if (partner.stazioni_allocate) {
+                    try {
+                      const allocatedData = typeof partner.stazioni_allocate === 'string'
+                        ? JSON.parse(partner.stazioni_allocate)
+                        : partner.stazioni_allocate;
+                        
+                      if (Array.isArray(allocatedData)) {
+                        allocate = allocatedData;
+                      }
+                    } catch (e) {
+                      console.error(`❌ Error parsing stazioni_allocate for partner ${partner.id}:`, e);
+                    }
+                  }
+
+                  // Sum allocated stations
+                  allocate.forEach((stazione) => {
+                    const quantity = parseInt(stazione.quantity || "0", 10);
+                    if (!isNaN(quantity)) {
+                      stazioni_assegnate += quantity;
+                      console.log(`➕ Partner ${partner.id} allocated ${quantity} stations. Running total: ${stazioni_assegnate}`);
                     }
                   });
                 });
 
                 console.log(`✅ useAreeConStatistiche: Total requested stations for area ${area.nome}: ${stazioni_richieste}`);
+                console.log(`✅ useAreeConStatistiche: Total allocated stations for area ${area.nome}: ${stazioni_assegnate}`);
               } else {
                 console.log(`ℹ️ useAreeConStatistiche: Nessun partner trovato per l'area ${area.nome}`);
-              }
-
-              // Count assigned stations
-              const { count, error: assignedError } = await supabase
-                .from("stazioni")
-                .select("id", { count: "exact", head: true })
-                .in("partner_id", partnerIds);
-
-              if (assignedError) {
-                console.error(`❌ useAreeConStatistiche: Error counting assigned stations for area ${area.nome}:`, assignedError);
-              } else {
-                stazioni_assegnate = count || 0;
-                console.log(`Found ${stazioni_assegnate} assigned stations for area ${area.nome}`);
               }
             }
 
@@ -170,7 +152,7 @@ export const useAreeConStatistiche = () => {
               areaStato = "In attivazione";
             }
 
-            console.log(`✅ ------------ useAreeConStatistiche: Area ${area.nome} statistics - Requested: ${stazioni_richieste}, Assigned: ${stazioni_assegnate}, Partners: ${partnerCount}, Status: ${areaStato}`);
+            console.log(`✅ ------------ useAreeConStatistiche: Area ${area.nome} statistics - Requested: ${stazioni_richieste}, Allocated: ${stazioni_assegnate}, Partners: ${partnerCount}, Status: ${areaStato}`);
 
             // Transform capoluoghi data
             const capoluoghi = Array.isArray(area.aree_capoluoghi)

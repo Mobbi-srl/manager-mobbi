@@ -9,6 +9,7 @@ import { Pencil } from "lucide-react";
 import { AreaPartner } from "@/hooks/area-details/types";
 import PartnerStatusBadge from "./PartnerStatusBadge";
 import PartnerRankingConfirmation from "./PartnerRankingConfirmation";
+import { safeArrayParse } from "@/utils/jsonUtils";
 
 interface PartnerTableRowProps {
   partner: AreaPartner;
@@ -31,49 +32,49 @@ const PartnerTableRow: React.FC<PartnerTableRowProps> = ({
   onToggleSelection,
   onToggleConfirmation,
 }) => {
-  // State for managing editable ranking
   const [isEditingRanking, setIsEditingRanking] = useState(false);
   const [rankingValue, setRankingValue] = useState(partner.ranking || 0);
 
-  // Can edit ranking only when partner is in APPROVATO state
   const canEditRanking = partner.stato === "APPROVATO";
 
-  // Get requested and allocated stations count
+  // Get requested stations count using safe parsing
   console.log("partner.richiesta_stazioni_raw:", partner.richiesta_stazioni_raw);
-  const requestedStationsCount = partner.richiesta_stazioni_raw ?
-    Array.isArray(partner.richiesta_stazioni_raw) ?
-      partner.richiesta_stazioni_raw.reduce((acc, item) => acc + (item.quantity || 0), 0) : 0 : 0;
+  const requestedStationsArray = safeArrayParse(partner.richiesta_stazioni_raw, []);
+  const requestedStationsCount = requestedStationsArray.reduce((acc, item) => acc + (item.quantity || 0), 0);
 
-  const allocatedStationsCount = partner.stazioni_allocate || 0;
+  // Get allocated stations data using safe parsing
+  console.log(`🔍 PartnerTableRow: Processing allocated stations for partner ${partner.ragione_sociale || partner.nome_locale}`);
+  console.log("Raw stazioni_allocate from database:", partner.stazioni_allocate);
+  
+  const allocatedStationsArray = safeArrayParse(partner.stazioni_allocate, []);
+  const allocatedStationsCount = allocatedStationsArray.reduce((acc, item) => {
+    const quantity = parseInt(item.quantity || "0", 10);
+    return acc + (isNaN(quantity) ? 0 : quantity);
+  }, 0);
 
-  // Handle toggling edit mode for ranking
+  console.log(`🎯 Final allocated stations count for ${partner.ragione_sociale || partner.nome_locale}: ${allocatedStationsCount}`);
+
   const handleToggleEditRanking = () => {
     if (canEditRanking) {
       setIsEditingRanking(!isEditingRanking);
       if (isEditingRanking) {
-        // Reset to original value if canceling edit
         setRankingValue(partner.ranking || 0);
       }
     }
   };
 
-  // Handle ranking value change
   const handleRankingChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseInt(e.target.value);
     setRankingValue(isNaN(value) ? 0 : value);
   };
 
-  // Handle confirmation with updated ranking
   const handleConfirmation = () => {
-    // Pass the current rankingValue to the toggle function only when we're confirming
-    // This ensures the new ranking value is passed to the backend
     onToggleConfirmation(partner.id, partner.ranking_confirmed, rankingValue);
     setIsEditingRanking(false);
   };
 
   return (
     <TableRow>
-      {/* Only show checkbox column for privileged users */}
       {canSelect && (
         <TableCell>
           <Checkbox
@@ -97,22 +98,44 @@ const PartnerTableRow: React.FC<PartnerTableRowProps> = ({
             {requestedStationsCount} totali
           </Badge>
 
-          {Array.isArray(partner.richiesta_stazioni_raw) &&
-            partner.richiesta_stazioni_raw.map((item, index) => (
-              <div key={index} className="text-xs text-muted-foreground pl-1">
-                <span className="block">
-                  <span className="font-medium text-white-700">{item.model?.modelName || "Modello"}</span>,{" "}
-                  <span className="italic">{item.model?.colorName || "Colore"}</span> —{" "}
-                  <span className="text-amber-600 font-semibold">{item.quantity}</span>
-                </span>
-              </div>
-            ))}
+          {requestedStationsArray.map((item, index) => (
+            <div key={index} className="text-xs text-muted-foreground pl-1">
+              <span className="block">
+                <span className="font-medium text-white-700">{item.model?.modelName || "Modello"}</span>,{" "}
+                <span className="italic">{item.model?.colorName || "Colore"}</span> —{" "}
+                <span className="text-amber-600 font-semibold">{item.quantity}</span>
+              </span>
+            </div>
+          ))}
         </div>
       </TableCell>
       <TableCell>
-        <Badge variant="outline" className="bg-green-500/10 text-green-500">
-          {allocatedStationsCount}
-        </Badge>
+        <div className="flex flex-col gap-1">
+          <Badge variant="outline" className="bg-green-500/10 text-green-500 w-fit">
+            {allocatedStationsCount} allocate
+          </Badge>
+
+          {allocatedStationsArray.length > 0 ? (
+            allocatedStationsArray.map((item, index) => (
+              <div key={index} className="text-xs text-muted-foreground pl-1">
+                <span className="block">
+                  <span className="font-medium text-green-700">{item.modelName || "Modello"}</span>,{" "}
+                  <span className="italic">{item.colorName || "Colore"}</span> —{" "}
+                  <span className="text-green-600 font-semibold">{item.quantity}</span>
+                </span>
+              </div>
+            ))
+          ) : allocatedStationsCount > 0 ? (
+            <div className="text-xs text-muted-foreground pl-1">
+              <span className="text-green-600 font-semibold">{allocatedStationsCount} stazioni</span>
+              <span className="block italic">(dettagli non disponibili)</span>
+            </div>
+          ) : (
+            <div className="text-xs text-muted-foreground pl-1 italic">
+              Nessuna stazione allocata
+            </div>
+          )}
+        </div>
       </TableCell>
       <TableCell>
         <div className="flex items-center gap-2">

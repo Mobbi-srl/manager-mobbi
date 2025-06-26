@@ -7,7 +7,7 @@ type RegioneItaliana = Database["public"]["Enums"]["regione_italiana"];
 export const areaFormSchema = z.object({
   nome: z.string().min(2, { message: "Il nome deve essere almeno di 2 caratteri" }),
   regione: z.string().min(1, { message: "Scegli una regione" }),
-  provincia: z.string().min(1, { message: "Seleziona una provincia" }),
+  province: z.array(z.string()).min(1, { message: "Seleziona almeno una provincia" }),
   capoluoghi: z.array(z.string()).min(1, { message: "Seleziona almeno un comune" }),
   numero_stazioni: z.coerce.number().min(0, { message: "Numero stazioni obbligatorio" }),
   descrizione: z.string().optional(),

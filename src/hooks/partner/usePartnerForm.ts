@@ -1,3 +1,4 @@
+
 import { useEffect, useCallback, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -34,8 +35,11 @@ export const usePartnerForm = () => {
       nazioneLegale: "Italia",
       numeroLocali: 1,
       indirizzoLegaleUgualeOperativo: false,
-      richiestaStazioni: []
+      richiestaStazioni: [],
+      ranking: undefined, // Changed from undefined to ensure validation triggers
+      note: "" // Add note field with empty default value
     },
+    mode: "onChange" // Enable real-time validation
   });
 
   // Get contacts operations

@@ -38,7 +38,7 @@ export const useRankingConfirmation = (areaId: string) => {
       // Validate that the partner is in the correct state for confirmation
       if (!currentStatus && partnerData.stato !== StatoPartner.APPROVATO) {
         console.error(`❌ Cannot confirm ranking: Partner is in ${partnerData.stato} state, must be ${StatoPartner.APPROVATO}`);
-        toast.error(`Solo i partner APPROVATI possono avere il ranking confermato`);
+        toast.error(`Solo i partner APPROVATI possono avere la valutazione confermata`);
         return false;
       }
 
@@ -74,7 +74,7 @@ export const useRankingConfirmation = (areaId: string) => {
 
       if (error) {
         console.error("❌ Error updating ranking confirmation status:", error);
-        toast.error("Errore durante l'aggiornamento dello stato del ranking");
+        toast.error("Errore durante l'aggiornamento dello stato della valutazione");
         return false;
       }
 
@@ -86,9 +86,9 @@ export const useRankingConfirmation = (areaId: string) => {
 
       const successMessage = !currentStatus
         ? isPrivilegedUser
-          ? "✅ Grado di urgenza confermato con successo! Partner promosso a SELEZIONATO"
-          : "✅ Grado di urgenza confermato con successo!"
-        : "✅ Grado di urgenza rimossa";
+          ? "✅ Valutazione confermata con successo! Partner promosso a SELEZIONATO"
+          : "✅ Valutazione confermata con successo!"
+        : "✅ Valutazione rimossa";
 
       toast.success(successMessage);
       return true;

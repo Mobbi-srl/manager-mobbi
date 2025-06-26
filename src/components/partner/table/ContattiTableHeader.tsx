@@ -7,10 +7,34 @@ import {
 } from "@/components/ui/table";
 
 type ContattiTableHeaderlProps = {
-  whatRole?: string; // 👈 accettiamo la prop
+  showAreaGestori?: boolean;
+  showDeleteAction?: boolean;
+  isAdminOrMaster?: boolean;
 };
-const ContattiTableHeader: React.FC<ContattiTableHeaderlProps> = ({ whatRole }) => {
-  const isSuperAdminOrMaster = whatRole === "SuperAdmin" || whatRole === "Master";
+
+const ContattiTableHeader: React.FC<ContattiTableHeaderlProps> = ({ 
+  showAreaGestori = false,
+  showDeleteAction = false,
+  isAdminOrMaster = false
+}) => {
+  if (isAdminOrMaster) {
+    return (
+      <TableHeader>
+        <TableRow>
+          <TableHead>Nome Locale/Partner</TableHead>
+          <TableHead>Comune</TableHead>
+          <TableHead>Segnalatore</TableHead>
+          {showAreaGestori && (
+            <TableHead>Gestore</TableHead>
+          )}
+          <TableHead>Ranking</TableHead>
+          <TableHead>Stato</TableHead>
+          <TableHead>Contatto</TableHead>
+          <TableHead className="text-right">Azioni</TableHead>
+        </TableRow>
+      </TableHeader>
+    );
+  }
 
   return (
     <TableHeader>
@@ -19,12 +43,11 @@ const ContattiTableHeader: React.FC<ContattiTableHeaderlProps> = ({ whatRole }) 
         <TableHead>Indirizzo Completo</TableHead>
         <TableHead>Comune</TableHead>
         <TableHead>Segnalatore</TableHead>
-        {isSuperAdminOrMaster && (
+        {showAreaGestori && (
           <TableHead>Gestore Area</TableHead>
         )}
         <TableHead>Stato</TableHead>
         <TableHead>Contatto</TableHead>
-        <TableHead>Ruolo</TableHead>
         <TableHead className="text-right">Azioni</TableHead>
       </TableRow>
     </TableHeader>

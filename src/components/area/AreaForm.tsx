@@ -17,7 +17,6 @@ import { areaFormSchema, AreaFormSchema } from "./schema";
 import { useProvinceComuniData } from "@/hooks/area-details/useProvinceComuniData";
 import { DialogClose } from "@/components/ui/dialog";
 
-
 type RegioneItaliana = Database["public"]["Enums"]["regione_italiana"];
 
 interface AreaFormProps {
@@ -27,21 +26,17 @@ interface AreaFormProps {
 
 const AreaForm: React.FC<AreaFormProps> = ({ onSubmit: parentOnSubmit, isSubmitting }) => {
   const [selectedRegione, setSelectedRegione] = React.useState<RegioneItaliana | undefined>(undefined);
-  const [selectedProvincia, setSelectedProvincia] = React.useState<string | undefined>(undefined);
+  const [selectedProvinces, setSelectedProvinces] = React.useState<string[]>([]);
   const [isLoadingData, setIsLoadingData] = React.useState(false);
 
-  const { provincesInRegion, getComuniByProvince } = useProvinceComuniData(selectedRegione);
-  const comuni = React.useMemo(() =>
-    getComuniByProvince(selectedProvincia),
-    [selectedProvincia, getComuniByProvince]
-  );
+  const { provincesInRegion } = useProvinceComuniData(selectedRegione);
 
   const form = useForm<AreaFormSchema>({
     resolver: zodResolver(areaFormSchema),
     defaultValues: {
       nome: "",
       regione: "",
-      provincia: "",
+      province: [],
       capoluoghi: [],
       numero_stazioni: 0,
       descrizione: "",
@@ -52,26 +47,26 @@ const AreaForm: React.FC<AreaFormProps> = ({ onSubmit: parentOnSubmit, isSubmitt
   const handleRegioneChange = (value: string) => {
     setIsLoadingData(true);
     setSelectedRegione(value as RegioneItaliana);
-    setSelectedProvincia(undefined);
-    form.setValue("provincia", "");
+    setSelectedProvinces([]);
+    form.setValue("province", []);
     form.setValue("capoluoghi", []);
     setIsLoadingData(false);
   };
 
-  const handleProvinciaChange = (value: string) => {
+  const handleProvincesChange = (values: string[]) => {
     setIsLoadingData(true);
-    setSelectedProvincia(value);
+    setSelectedProvinces(values);
     form.setValue("capoluoghi", []);
     setIsLoadingData(false);
   };
 
   const handleSubmit = async (data: AreaFormSchema) => {
     try {
-      // Prepare data to submit including provincia
+      // Prepare data to submit including multiple provinces
       const submitData: AreaFormData = {
         nome: data.nome,
         regione: data.regione,
-        provincia: data.provincia, // Includi la provincia
+        provincia: data.province.join(", "), // Join multiple provinces with comma
         capoluoghi: data.capoluoghi,
         numero_stazioni: data.numero_stazioni,
         descrizione: data.descrizione,
@@ -135,15 +130,14 @@ const AreaForm: React.FC<AreaFormProps> = ({ onSubmit: parentOnSubmit, isSubmitt
           form={form}
           selectedRegione={selectedRegione}
           provinces={provincesInRegion}
-          onProvinceChange={handleProvinciaChange}
+          onProvinceChange={handleProvincesChange}
           isLoading={isLoadingData}
         />
 
         <CitySelector
           form={form}
           selectedRegione={selectedRegione}
-          selectedProvince={selectedProvincia}
-          comuni={comuni}
+          selectedProvinces={selectedProvinces}
           isLoading={isLoadingData}
         />
 

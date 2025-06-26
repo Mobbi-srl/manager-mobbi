@@ -2,28 +2,22 @@
 import React, { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Contact, Search } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { StatoPartner } from "@/hooks/partner/types";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Contact } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { StatoPartner } from "@/hooks/partner/types";
+import ContattiFilters from "@/components/contatti/ContattiFilters";
+import ContactGroup from "@/components/contatti/ContactGroup";
 
 interface Partner {
   id: string;
   ragione_sociale: string;
   nome_locale: string;
   stato: StatoPartner;
+  pec?: string;
+  nome_rapp_legale?: string;
+  cognome_rapp_legale?: string;
+  telefono?: string;
 }
 
 interface Contatto {
@@ -39,12 +33,23 @@ interface Contatto {
 
 interface GroupedContacts {
   partner: Partner;
-  contatti: Contatto[];
+  contatti: (Contatto | { 
+    id: string; 
+    nome?: string; 
+    cognome?: string; 
+    email?: string; 
+    numero?: string; 
+    ruolo: string; 
+    isLegalRep: boolean;
+    partner_id: string;
+    partner: Partner | null;
+  })[];
 }
 
 const ContattiSegnalati = () => {
   const [searchTerm, setSearchTerm] = useState("");
-  const isMobile = useIsMobile();
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [openItems, setOpenItems] = useState<string[]>([]);
 
   // Fetch dei contatti da Supabase
   const { data: contatti, isLoading, error } = useQuery({
@@ -64,7 +69,11 @@ const ContattiSegnalati = () => {
             id,
             ragione_sociale,
             nome_locale,
-            stato
+            stato,
+            pec,
+            nome_rapp_legale,
+            cognome_rapp_legale,
+            telefono
           )
         `);
 
@@ -73,12 +82,12 @@ const ContattiSegnalati = () => {
     },
   });
 
-  // Group contacts by partner
+  // Group contacts by partner and add legal representative
   const groupedContacts = useMemo(() => {
     if (!contatti) return [];
 
     const grouped: { [key: string]: GroupedContacts } = {};
-    
+
     contatti.forEach(contatto => {
       if (contatto.partner) {
         if (!grouped[contatto.partner_id]) {
@@ -87,61 +96,81 @@ const ContattiSegnalati = () => {
             contatti: []
           };
         }
-        
+
         grouped[contatto.partner_id].contatti.push(contatto);
+
+        // Add legal representative if exists and not already added
+        const partner = contatto.partner;
+        if (partner.nome_rapp_legale && partner.cognome_rapp_legale) {
+          const hasLegalRep = grouped[contatto.partner_id].contatti.some(
+            (c: any) => c.isLegalRep === true
+          );
+          
+          if (!hasLegalRep) {
+            grouped[contatto.partner_id].contatti.push({
+              id: `legal-rep-${partner.id}`,
+              nome: partner.nome_rapp_legale,
+              cognome: partner.cognome_rapp_legale,
+              email: partner.pec,
+              numero: partner.telefono,
+              ruolo: "Rappresentante Legale",
+              isLegalRep: true,
+              partner_id: contatto.partner_id,
+              partner: contatto.partner
+            });
+          }
+        }
       }
     });
-    
+
     return Object.values(grouped);
   }, [contatti]);
 
-  // Filtraggio dei contatti in base al termine di ricerca
+  // Updated filtering logic to include status filter
   const filteredGroups = useMemo(() => {
     if (!groupedContacts) return [];
-    if (!searchTerm) return groupedContacts;
-
-    const searchTermLower = searchTerm.toLowerCase();
     
-    return groupedContacts.filter(group => {
-      // Check if partner matches
-      if (
-        group.partner.ragione_sociale?.toLowerCase().includes(searchTermLower) ||
-        group.partner.nome_locale?.toLowerCase().includes(searchTermLower)
-      ) {
-        return true;
-      }
-      
-      // Check if any contact in the group matches
-      return group.contatti.some(contatto => 
-        contatto.nome?.toLowerCase().includes(searchTermLower) ||
-        contatto.cognome?.toLowerCase().includes(searchTermLower) ||
-        contatto.email?.toLowerCase().includes(searchTermLower) ||
-        contatto.numero?.toLowerCase().includes(searchTermLower) ||
-        contatto.ruolo?.toLowerCase().includes(searchTermLower)
+    let filtered = groupedContacts;
+
+    // Apply status filter
+    if (statusFilter && statusFilter !== "all") {
+      filtered = filtered.filter(group => 
+        group.partner.stato === statusFilter
       );
-    });
-  }, [groupedContacts, searchTerm]);
-
-  // Function to get status badge
-  const getStatusBadge = (status: StatoPartner | undefined | string) => {
-    if (!status) return <Badge variant="outline">N/D</Badge>;
-    
-    switch(status) {
-      case StatoPartner.CONTATTO:
-        return <Badge variant="outline" className="bg-blue-500/10 text-blue-500">Contatto</Badge>;
-      case StatoPartner.APPROVATO:
-        return <Badge variant="outline" className="bg-purple-500/10 text-purple-500">Approvato</Badge>;
-      case StatoPartner.SELEZIONATO:
-        return <Badge variant="outline" className="bg-amber-500/10 text-amber-500">Selezionato</Badge>;
-      case StatoPartner.ALLOCATO:
-        return <Badge variant="outline" className="bg-indigo-500/10 text-indigo-500">Allocato</Badge>;
-      case StatoPartner.CONTRATTUALIZZATO:
-        return <Badge variant="outline" className="bg-emerald-500/10 text-emerald-500">Contrattualizzato</Badge>;
-      case StatoPartner.PERSO:
-        return <Badge variant="outline" className="bg-red-500/10 text-red-500">Perso</Badge>;
-      default:
-        return <Badge variant="outline">{status}</Badge>;
     }
+
+    // Apply search filter
+    if (searchTerm) {
+      const searchTermLower = searchTerm.toLowerCase();
+      filtered = filtered.filter(group => {
+        // Check if partner matches
+        if (
+          group.partner.ragione_sociale?.toLowerCase().includes(searchTermLower) ||
+          group.partner.nome_locale?.toLowerCase().includes(searchTermLower)
+        ) {
+          return true;
+        }
+
+        // Check if any contact in the group matches
+        return group.contatti.some(contatto =>
+          contatto.nome?.toLowerCase().includes(searchTermLower) ||
+          contatto.cognome?.toLowerCase().includes(searchTermLower) ||
+          contatto.email?.toLowerCase().includes(searchTermLower) ||
+          contatto.numero?.toLowerCase().includes(searchTermLower) ||
+          contatto.ruolo?.toLowerCase().includes(searchTermLower)
+        );
+      });
+    }
+
+    return filtered;
+  }, [groupedContacts, searchTerm, statusFilter]);
+
+  const toggleItem = (itemId: string) => {
+    setOpenItems(prev => 
+      prev.includes(itemId) 
+        ? prev.filter(id => id !== itemId)
+        : [...prev, itemId]
+    );
   };
 
   // Funzione per esportare i contatti in CSV
@@ -149,7 +178,7 @@ const ContattiSegnalati = () => {
     if (!contatti || contatti.length === 0) return;
 
     const headers = ["Partner", "Locale", "Stato", "Nome", "Cognome", "Email", "Numero", "Ruolo"];
-    
+
     const csvContent = [
       // Headers
       headers.join(","),
@@ -178,96 +207,47 @@ const ContattiSegnalati = () => {
   };
 
   return (
-    <div className="h-full flex flex-col overflow-hidden">
-      <div className="flex items-center gap-2 mb-6">
-        <Contact className="h-6 w-6 text-verde-light" />
-        <h1 className="text-2xl font-bold">Contatti Segnalati</h1>
+    <div className="h-full flex flex-col overflow-hidden mobile-padding">
+      <div className="flex items-center gap-2 mb-4 sm:mb-6">
+        <Contact className="h-5 w-5 sm:h-6 sm:w-6 text-verde-light" />
+        <h1 className="mobile-header">Contatti Segnalati</h1>
       </div>
 
       <Card className="bg-gray-900/60 border-gray-800 flex-1 flex flex-col overflow-hidden">
-        <CardHeader>
-          <CardTitle>Lista Contatti</CardTitle>
-          <div className="flex flex-col sm:flex-row gap-4 mt-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Cerca contatti..."
-                className="pl-8"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-            <Button 
-              onClick={exportToCSV} 
-              disabled={!contatti || contatti.length === 0}
-            >
-              Esporta CSV
-            </Button>
-          </div>
+        <CardHeader className="pb-4">
+          <CardTitle className="text-lg sm:text-xl">Lista Contatti</CardTitle>
+          
+          <ContattiFilters
+            searchTerm={searchTerm}
+            setSearchTerm={setSearchTerm}
+            statusFilter={statusFilter}
+            setStatusFilter={setStatusFilter}
+            onExportCSV={exportToCSV}
+            hasContatti={!!(contatti && contatti.length > 0)}
+          />
         </CardHeader>
-        <CardContent className="flex-1 p-0 pb-6 px-6 overflow-hidden">
+        <CardContent className="flex-1 p-0 pb-4 sm:pb-6 px-4 sm:px-6 overflow-hidden">
           <ScrollArea className="h-full w-full">
             {isLoading ? (
-              <div className="text-center py-4">Caricamento contatti...</div>
+              <div className="text-center py-8">Caricamento contatti...</div>
             ) : error ? (
-              <div className="text-center py-4 text-red-500">
+              <div className="text-center py-8 text-red-500">
                 Errore nel caricamento dei contatti
               </div>
             ) : filteredGroups && filteredGroups.length > 0 ? (
-              <div className="space-y-8 min-w-full pr-4">
+              <div className="space-y-4 pr-2 sm:pr-4">
                 {filteredGroups.map(group => (
-                  <div key={group.partner.id} className="border border-border rounded-lg overflow-hidden">
-                    <div className="bg-secondary/30 p-3 font-bold flex items-center justify-between">
-                      <div className={isMobile ? "flex flex-col items-start" : ""}>
-                        {group.partner.nome_locale ? (
-                          <>
-                            <span className="text-lg">{group.partner.nome_locale}</span>
-                            {group.partner.ragione_sociale && (
-                              <span className={`text-sm text-muted-foreground ${isMobile ? "" : "ml-2"}`}>
-                                ({group.partner.ragione_sociale})
-                              </span>
-                            )}
-                          </>
-                        ) : (
-                          <span className="text-lg">{group.partner.ragione_sociale}</span>
-                        )}
-                      </div>
-                      {group.partner.stato && (
-                        <div>
-                          {getStatusBadge(group.partner.stato)}
-                        </div>
-                      )}
-                    </div>
-                    <div className="overflow-x-auto">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Nome</TableHead>
-                            <TableHead>Cognome</TableHead>
-                            <TableHead>Email</TableHead>
-                            <TableHead>Numero</TableHead>
-                            <TableHead>Ruolo</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {group.contatti.map((contatto) => (
-                            <TableRow key={contatto.id}>
-                              <TableCell>{contatto.nome || "-"}</TableCell>
-                              <TableCell>{contatto.cognome || "-"}</TableCell>
-                              <TableCell>{contatto.email || "-"}</TableCell>
-                              <TableCell>{contatto.numero || "-"}</TableCell>
-                              <TableCell>{contatto.ruolo || "-"}</TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  </div>
+                  <ContactGroup
+                    key={group.partner.id}
+                    group={group}
+                    isOpen={openItems.includes(group.partner.id)}
+                    onToggle={() => toggleItem(group.partner.id)}
+                  />
                 ))}
               </div>
             ) : (
-              <div className="text-center py-4">
-                {searchTerm ? "Nessun contatto corrisponde alla ricerca" : "Nessun contatto disponibile"}
+              <div className="text-center py-8">
+                {searchTerm || statusFilter !== "all" ? "Nessun contatto corrisponde ai filtri selezionati" : "Nessun contatto disponibile"}
               </div>
             )}
           </ScrollArea>

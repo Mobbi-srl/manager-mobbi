@@ -14,7 +14,7 @@ import { Contatto } from "@/hooks/partner/partnerTypes";
 
 interface DeletePartnerDialogProps {
   isOpen: boolean;
-  onClose: () => void;
+  onOpenChange: (open: boolean) => void;
   onConfirm: () => void;
   contatto: Contatto | null;
   isLoading: boolean;
@@ -22,7 +22,7 @@ interface DeletePartnerDialogProps {
 
 const DeletePartnerDialog: React.FC<DeletePartnerDialogProps> = ({
   isOpen,
-  onClose,
+  onOpenChange,
   onConfirm,
   contatto,
   isLoading,
@@ -32,8 +32,10 @@ const DeletePartnerDialog: React.FC<DeletePartnerDialogProps> = ({
   const nomePartner = contatto.partner?.nome_locale || contatto.partner?.ragione_sociale;
   const nomeContatto = `${contatto.nome} ${contatto.cognome}`;
 
+  const handleClose = () => onOpenChange(false);
+
   return (
-    <AlertDialog open={isOpen} onOpenChange={onClose}>
+    <AlertDialog open={isOpen} onOpenChange={onOpenChange}>
       <AlertDialogContent className="z-[9999] max-w-md mx-auto">
         <AlertDialogHeader>
           <AlertDialogTitle>Conferma eliminazione</AlertDialogTitle>

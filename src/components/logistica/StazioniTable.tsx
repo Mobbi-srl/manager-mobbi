@@ -27,9 +27,9 @@ import { Badge } from "@/components/ui/badge";
 
 interface Stazione {
   id: string;
-  numero_stazione: number;
+  numero_seriale: string | null;
   modello: string;
-  stato: boolean;
+  attiva: boolean;
   manutenzione: boolean;
   partner: {
     id: string;
@@ -55,9 +55,9 @@ const StazioniTable: React.FC = () => {
         .from("stazioni")
         .select(`
           id,
-          numero_stazione,
+          numero_seriale,
           modello,
-          stato,
+          attiva,
           manutenzione,
           partner:partner_id (
             id,
@@ -76,7 +76,7 @@ const StazioniTable: React.FC = () => {
     mutationFn: async (stationId: string) => {
       const { data, error } = await supabase
         .from("stazioni")
-        .update({ stato: true })
+        .update({ attiva: true })
         .eq("id", stationId)
         .select();
 
@@ -125,7 +125,7 @@ const StazioniTable: React.FC = () => {
   const filteredStazioni = stazioni?.filter((stazione) => {
     const searchTermLower = searchTerm.toLowerCase();
     return (
-      String(stazione.numero_stazione).includes(searchTermLower) ||
+      String(stazione.numero_seriale).includes(searchTermLower) ||
       stazione.modello?.toLowerCase().includes(searchTermLower) ||
       stazione.partner?.ragione_sociale?.toLowerCase().includes(searchTermLower) ||
       stazione.partner?.nome_locale?.toLowerCase().includes(searchTermLower)
@@ -178,7 +178,7 @@ const StazioniTable: React.FC = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Numero</TableHead>
+                <TableHead>Numero Seriale</TableHead>
                 <TableHead>Modello</TableHead>
                 <TableHead>Partner</TableHead>
                 <TableHead>Locale</TableHead>
@@ -189,16 +189,16 @@ const StazioniTable: React.FC = () => {
             <TableBody>
               {filteredStazioni.map((stazione) => (
                 <TableRow key={stazione.id}>
-                  <TableCell>{stazione.numero_stazione || "-"}</TableCell>
+                  <TableCell>{stazione.numero_seriale || "-"}</TableCell>
                   <TableCell>{stazione.modello || "-"}</TableCell>
                   <TableCell>{stazione.partner?.ragione_sociale || "-"}</TableCell>
                   <TableCell>{stazione.partner?.nome_locale || "-"}</TableCell>
                   <TableCell>
                     <Badge 
-                      variant={stazione.stato ? "default" : "secondary"}
-                      className={stazione.stato ? "bg-green-600" : ""}
+                      variant={stazione.attiva ? "default" : "secondary"}
+                      className={stazione.attiva ? "bg-green-600" : ""}
                     >
-                      {stazione.stato ? "Attiva" : "Non attiva"}
+                      {stazione.attiva ? "Attiva" : "Non attiva"}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
@@ -207,7 +207,7 @@ const StazioniTable: React.FC = () => {
                         variant="outline" 
                         size="sm"
                         onClick={() => handleSetShipped(stazione)}
-                        disabled={stazione.stato}
+                        disabled={stazione.attiva}
                       >
                         <Truck className="mr-2 h-4 w-4" />
                         Spedita
@@ -239,7 +239,7 @@ const StazioniTable: React.FC = () => {
           <DialogHeader>
             <DialogTitle>Conferma Spedizione</DialogTitle>
             <DialogDescription>
-              Stai per segnare la stazione {selectedStazione?.numero_stazione} come spedita.
+              Stai per segnare la stazione {selectedStazione?.numero_seriale} come spedita.
               {selectedStazione?.partner && ` Destinazione: ${selectedStazione.partner.nome_locale} (${selectedStazione.partner.ragione_sociale})`}
             </DialogDescription>
           </DialogHeader>
@@ -262,7 +262,7 @@ const StazioniTable: React.FC = () => {
           <DialogHeader>
             <DialogTitle>Attivazione Stazione</DialogTitle>
             <DialogDescription>
-              Inserisci il codice di attivazione per la stazione {selectedStazione?.numero_stazione}.
+              Inserisci il codice di attivazione per la stazione {selectedStazione?.numero_seriale}.
             </DialogDescription>
           </DialogHeader>
 

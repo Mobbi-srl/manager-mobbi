@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Contatto } from "./partnerTypes";
 import { ContattoFormValues, StazioneRichiesta, PartnerFormValues } from "./types";
 import { UseFormReturn } from "react-hook-form";
+import { safeArrayParse } from "@/utils/jsonUtils";
 
 export const usePartnerDataFetching = (
   form: UseFormReturn<PartnerFormValues>,
@@ -20,39 +21,77 @@ export const usePartnerDataFetching = (
     setIsLoading(true);
 
     try {
-      // Get partner details
-      const { data: partnerData, error: partnerError } = await supabase
+      console.log("🔍 Fetching partner details for ID:", contatto.partner.id);
+      
+      // Prima prova a cercare nella tabella partner principale
+      let { data: partnerData, error: partnerError } = await supabase
         .from("partner")
         .select("*, locali:tipologia_locale_id(*)")
         .eq("id", contatto.partner.id)
-        .single();
+        .maybeSingle();
 
-      if (partnerError) throw partnerError;
+      let isPartnerNoArea = false;
+      
+      // Se non trova il partner nella tabella principale, cerca in partner_no_area
+      if (!partnerData) {
+        console.log("🔍 Partner not found in main table, searching in partner_no_area...");
+        
+        const { data: partnerNoAreaData, error: partnerNoAreaError } = await supabase
+          .from("partner_no_area")
+          .select("*")
+          .eq("id", contatto.partner.id)
+          .maybeSingle();
 
-      console.log("Partner data loaded:", partnerData);
-      console.log("Original ranking value:", partnerData.ranking);
-      console.log("Original ranking_confirmed:", partnerData.ranking_confirmed);
-      console.log("Original richiesta_stazioni:", partnerData.richiesta_stazioni);
+        if (partnerNoAreaError) {
+          console.error("❌ Error fetching from partner_no_area:", partnerNoAreaError);
+          throw partnerNoAreaError;
+        }
 
-      // Load existing contatti for this partner
+        if (partnerNoAreaData) {
+          console.log("✅ Found partner in partner_no_area table");
+          // Aggiungi i campi mancanti per compatibilità con il tipo
+          partnerData = {
+            ...partnerNoAreaData,
+            area_id: null, // Partner senza area non ha area_id
+            locali: null // Partner da partner_no_area non ha la join con locali
+          };
+          isPartnerNoArea = true;
+        } else {
+          throw new Error("Partner non trovato in nessuna tabella");
+        }
+      } else {
+        console.log("✅ Found partner in main partner table");
+      }
+
+      if (partnerError && !isPartnerNoArea) {
+        console.error("❌ Error fetching partner:", partnerError);
+        throw partnerError;
+      }
+
+      console.log("📋 Partner data loaded:", partnerData);
+      console.log("🏷️ Is partner without area:", isPartnerNoArea);
+
+      // Load existing contatti for this partner from the appropriate table
+      const contattiTable = isPartnerNoArea ? "contatti_no_area" : "contatti";
+      console.log("🔍 Fetching contatti from table:", contattiTable);
+      
       const { data: contattiData, error: contattiError } = await supabase
-        .from("contatti")
+        .from(contattiTable)
         .select("*")
         .eq("partner_id", contatto.partner.id);
 
-      if (contattiError) throw contattiError;
-
-      // Process richiesta_stazioni to ensure it matches the expected format
-      let formattedStazioni: StazioneRichiesta[] = [];
-      try {
-        formattedStazioni = formatStazioniRichieste(partnerData.richiesta_stazioni);
-      } catch (err) {
-        console.error("Error formatting stazioni:", err);
-        formattedStazioni = [];
+      if (contattiError) {
+        console.error("❌ Error fetching contatti:", contattiError);
+        throw contattiError;
       }
 
+      console.log("📞 Contatti data loaded:", contattiData);
+
+      // Process richiesta_stazioni using safe parsing
+      const formattedStazioni = formatStazioniRichieste(partnerData.richiesta_stazioni);
+
       // Update form with partner data
-      updatePartnerFormWithData(form, partnerData, formattedStazioni);
+      updatePartnerFormWithData(form, partnerData, formattedStazioni, isPartnerNoArea);
 
       // Format contacts for display
       if (contattiData && contattiData.length > 0) {
@@ -66,11 +105,15 @@ export const usePartnerDataFetching = (
           id: c.id
         }));
         setContatti(formattedContatti);
+        console.log("📞 Formatted contatti:", formattedContatti);
+      } else {
+        console.log("📞 No contatti found");
+        setContatti([]);
       }
 
       setIsLoading(false);
     } catch (error) {
-      console.error("Error fetching partner details:", error);
+      console.error("💥 Error fetching partner details:", error);
       toast.error("Errore nel caricamento dei dati del partner");
       setIsLoading(false);
     }
@@ -84,72 +127,33 @@ export const usePartnerDataFetching = (
 
 // Utility functions 
 function formatStazioniRichieste(richiesta_stazioni: any): StazioneRichiesta[] {
-  let formattedStazioni: StazioneRichiesta[] = [];
-  
-  // Debug the incoming value
   console.log("Raw richiesta_stazioni:", richiesta_stazioni);
   
-  // Check if richiesta_stazioni exists
-  if (!richiesta_stazioni) {
-    console.log("No richiesta_stazioni data found, returning empty array");
-    return [];
-  }
+  // Use safe parsing utility
+  const stazioniArray = safeArrayParse(richiesta_stazioni, []);
   
-  try {
-    // Handle different possible formats coming from the database
-    let stazioni = richiesta_stazioni;
-    
-    // If it's already a valid array, use it directly
-    if (Array.isArray(stazioni)) {
-      console.log("richiesta_stazioni is already an array:", stazioni);
-    } 
-    // If it's a JSON string, parse it
-    else if (typeof richiesta_stazioni === 'string') {
-      try {
-        stazioni = JSON.parse(richiesta_stazioni);
-        console.log("Parsed richiesta_stazioni from string:", stazioni);
-      } catch (e) {
-        console.error("Failed to parse richiesta_stazioni string:", e);
-        stazioni = [];
-      }
-    } 
-    // If it's a single object (not array), wrap it in an array
-    else if (typeof richiesta_stazioni === 'object' && richiesta_stazioni !== null) {
-      stazioni = [richiesta_stazioni];
-      console.log("Wrapped single object in array:", stazioni);
-    }
-    
-    // Ensure stazioni is an array
-    stazioni = Array.isArray(stazioni) ? stazioni : [];
-    
-    console.log("Processed stazioni array:", stazioni);
-    
-    formattedStazioni = stazioni.map((stazione: any) => ({
-      modelId: stazione.modelId || "",
-      modelName: stazione.modelName || "",
-      colorId: stazione.colorId || "",
-      colorName: stazione.colorName || "",
-      quantity: typeof stazione.quantity === 'number' ? stazione.quantity : 1
-    }));
-    
-    console.log("Formatted stazioni for form:", formattedStazioni);
-  } catch (e) {
-    console.error("Error processing richiesta_stazioni:", e);
-    console.log("Raw value causing error:", richiesta_stazioni);
-    formattedStazioni = [];
-  }
+  const formattedStazioni = stazioniArray.map((stazione: any) => ({
+    modelId: stazione.modelId || "",
+    modelName: stazione.modelName || "",
+    colorId: stazione.colorId || "",
+    colorName: stazione.colorName || "",
+    quantity: typeof stazione.quantity === 'number' ? stazione.quantity : 1
+  }));
   
+  console.log("Formatted stazioni for form:", formattedStazioni);
   return formattedStazioni;
 }
 
 function updatePartnerFormWithData(
   form: UseFormReturn<PartnerFormValues>, 
   partnerData: any,
-  formattedStazioni: StazioneRichiesta[]
+  formattedStazioni: StazioneRichiesta[],
+  isPartnerNoArea: boolean = false
 ) {
   // Log the ranking value for debugging
   console.log("Setting ranking value in form:", partnerData.ranking);
   console.log("Setting ranking_confirmed value in form:", partnerData.ranking_confirmed);
+  console.log("Setting note value in form:", partnerData.note);
   
   form.reset({
     ragioneSociale: partnerData.ragione_sociale || "",
@@ -158,7 +162,7 @@ function updatePartnerFormWithData(
     citta: partnerData.citta_operativa || "",
     provincia: partnerData.provincia_operativa || "",
     regione: partnerData.regione_operativa || "",
-    cap: partnerData.cap_operativa ? partnerData.cap_operativa.toString() : "",
+    cap: partnerData.cap_operativa || "", // Keep as string
     nazione: partnerData.nazione_operativa || "Italia",
     tipologiaLocale: partnerData.tipologia_locale_id || "",
     piva: partnerData.piva || "",
@@ -167,12 +171,14 @@ function updatePartnerFormWithData(
     cittaLegale: partnerData.citta_legale || "",
     provinciaLegale: partnerData.provincia_legale || "",
     regioneLegale: partnerData.regione_legale || "",
-    capLegale: partnerData.cap_legale ? partnerData.cap_legale.toString() : "",
+    capLegale: partnerData.cap_legale || "", // Keep as string
     nazioneLegale: partnerData.nazione_legale || "Italia",
     numeroLocali: partnerData.numero_locali || 1,
     ranking: partnerData.ranking !== null && partnerData.ranking !== undefined ? partnerData.ranking : null,
+    note: partnerData.note || "", // Add note field
     indirizzoLegaleUgualeOperativo: false,
     richiestaStazioni: formattedStazioni,
-    areaId: partnerData.area_id || ""
+    // Se è un partner senza area, non impostare area_id
+    areaId: isPartnerNoArea ? "" : (partnerData.area_id || "")
   });
 }

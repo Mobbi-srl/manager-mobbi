@@ -5,10 +5,10 @@ import { toast } from "sonner";
 export const sendSetPasswordMail = async (email: string) => {
   try {
     console.log("Calling edge function send-set-password-link for:", email);
-    
+
     // Fix: Add authorization header with Supabase anon key
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1kaWNqeHltbnZ0ZWNzenN2dHF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUzNTIzOTUsImV4cCI6MjA2MDkyODM5NX0.opm8RWcqJefHTGeJcvME17oyhaUBsPaw0Lp9VcibIcY";
-    
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhnYnZmcmhlbmZrdWpmeXFtenNrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDgwMDM0NTMsImV4cCI6MjA2MzU3OTQ1M30.JAYPlcX-9o6niMx0fMIpi8r6Y3iqkhuuTklD_dCWPd4";
+
     const response = await fetch('https://mdicjxymnvtecszsvtqz.functions.supabase.co/send-set-password-link', {
       method: 'POST',
       headers: {
@@ -18,14 +18,14 @@ export const sendSetPasswordMail = async (email: string) => {
       },
       body: JSON.stringify({ email })
     });
-    
+
     const data = await response.json();
-    
+
     if (!response.ok) {
       console.error("Error response from edge function:", response.status, data);
       throw new Error(data.error || data.message || "Errore nell'invio dell'email");
     }
-    
+
     console.log("Edge function response:", data);
     return data;
   } catch (error: any) {

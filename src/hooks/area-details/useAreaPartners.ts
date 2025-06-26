@@ -26,11 +26,8 @@ export const useAreaPartners = (areaId: string) => {
       "cc6289af-f9c3-437b-af0c-59bb49809775": { colorName: "Sky Blue" },
       "e55c73ea-606e-40cf-a6f1-a32f582627d0": { colorName: "Satin Bordeaux" },
     };
-    // For all users, proceed to fetch partners for the specified area
-    // We're no longer restricting Gestori from seeing partners in areas they don't manage
-    // This is because we're in the Area Detail view, so if they can see the area, they should see its partners
 
-    // Build the query to get partners for the area, with a join to get the tipologia_locale
+    // Build the query to get partners for the area, with a join to get the tipologia_locale AND stazioni_allocate
     const { data, error } = await supabase
       .from('partner')
       .select(`
@@ -46,6 +43,7 @@ export const useAreaPartners = (areaId: string) => {
         ranking,
         ranking_confirmed,
         richiesta_stazioni,
+        stazioni_allocate,
         area_id
       `)
       .eq('area_id', areaId);
@@ -56,30 +54,13 @@ export const useAreaPartners = (areaId: string) => {
     }
 
     console.log(`✅ useAreaPartners: Found ${data?.length || 0} partners for area ${areaId}`);
-
-    // Get station counts for each partner
-    const partnerIds = data.map(partner => partner.id);
-
-    const { data: stationCounts, error: countError } = await supabase
-      .from('stazioni')
-      .select('partner_id, count')
-      .in('partner_id', partnerIds)
-      .select();
-
-    if (countError) {
-      console.error('Error fetching station counts:', countError);
-    }
-
-    // Create a map of partner_id to station count
-    const stationCountMap: Record<string, number> = {};
-    if (stationCounts) {
-      stationCounts.forEach(item => {
-        stationCountMap[item.partner_id] = (stationCountMap[item.partner_id] || 0) + 1;
-      });
-    }
+    console.log('🔍 Raw partner data with stazioni_allocate:', data);
 
     // Transform the data to match the AreaPartner interface
     return data.map(partner => {
+      console.log(`🔍 Processing partner ${partner.ragione_sociale || partner.nome_locale}:`);
+      console.log('- Raw stazioni_allocate:', partner.stazioni_allocate);
+
       // Parse richiesta_stazioni to ensure it's in the correct format
       let parsedRequestedStations: {
         model: {
@@ -119,12 +100,11 @@ export const useAreaPartners = (areaId: string) => {
         }
       }
 
-
       return {
         id: partner.id,
         ragione_sociale: partner.ragione_sociale,
         nome_locale: partner.nome_locale,
-        tipologia_locale: partner.locali?.tipologia, // Get tipologia from the locali relation
+        tipologia_locale: partner.locali?.tipologia,
         indirizzo_operativa: partner.indirizzo_operativa,
         citta_operativa: partner.citta_operativa,
         provincia_operativa: partner.provincia_operativa,
@@ -132,7 +112,7 @@ export const useAreaPartners = (areaId: string) => {
         ranking: partner.ranking,
         ranking_confirmed: partner.ranking_confirmed,
         richiesta_stazioni_raw: parsedRequestedStations,
-        stazioni_allocate: stationCountMap[partner.id] || 0
+        stazioni_allocate: partner.stazioni_allocate // Pass the raw data as-is
       };
     });
   };

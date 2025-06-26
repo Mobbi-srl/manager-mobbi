@@ -6,6 +6,7 @@ import { AddressFields } from "./AddressFields";
 import { TipologiaLocaleField } from "./TipologiaLocaleField";
 import { MetadataFields } from "./MetadataFields";
 import { AreaSelectionField } from "./AreaSelectionField";
+import { NoteField } from "./NoteField";
 
 interface PartnerDetailsFieldsProps {
   form: UseFormReturn<PartnerFormValues>;
@@ -25,6 +26,11 @@ export const PartnerDetailsFields: React.FC<PartnerDetailsFieldsProps> = ({ form
       
       <h3 className="text-lg font-medium mb-4 mt-6 pt-4 border-t">Altro</h3>
       <MetadataFields form={form} />
+      
+      {/* Note Field */}
+      <div className="mt-4">
+        <NoteField form={form} />
+      </div>
     </div>
   );
 };

@@ -93,17 +93,20 @@ const DashboardSidebar = () => {
             </SidebarMenuButton>
           </SidebarMenuItem>
 
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild>
-              <NavLink
-                to="/dashboard/logistica-attivazione"
-                className={({ isActive }) => isActive ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground" : ""}
-              >
-                <Package />
-                <span>Logistica e Attivazione</span>
-              </NavLink>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
+          {/* Nasconde Logistica e Attivazione ai Gestori */}
+          {!isGestore && (
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild>
+                <NavLink
+                  to="/dashboard/logistica-attivazione"
+                  className={({ isActive }) => isActive ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground" : ""}
+                >
+                  <Package />
+                  <span>Logistica e Attivazione</span>
+                </NavLink>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          )}
 
           {/* Only show Gestione Utenti to SuperAdmin users */}
           {isSuperAdmin && (

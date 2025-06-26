@@ -3,13 +3,13 @@ export interface AreaPartner {
   id: string;
   ragione_sociale?: string;
   nome_locale?: string;
+  tipologia_locale?: string;
   indirizzo_operativa?: string;
   citta_operativa?: string;
   provincia_operativa?: string;
-  tipologia_locale?: string; // Add this field to match with the database
+  stato: string;
   ranking?: number;
   ranking_confirmed?: boolean;
-  stato: string;
   richiesta_stazioni_raw?: {
     model: {
       modelId: string;
@@ -19,7 +19,7 @@ export interface AreaPartner {
     };
     quantity: number;
   }[];
-  stazioni_allocate?: number;
+  stazioni_allocate: any; // Can be number, object, or array
 }
 
 export interface AreaManager {
@@ -38,4 +38,5 @@ export interface AreaStation {
   slot_disponibili: number;
   partner_nome: string;
   stato?: string;
+  documento_allegato?: string;
 }

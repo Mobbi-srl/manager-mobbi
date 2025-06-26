@@ -4,7 +4,7 @@ import { Package } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import PartnerAllocationTable from "@/components/logistica/PartnerAllocationTable";
-import StazioniTable from "@/components/logistica/StazioniTable";
+import AreaStationsTab from "@/components/area/AreaStationsTab";
 
 const LogisticaAttivazione = () => {
   const [activeTab, setActiveTab] = useState("allocazione");
@@ -25,10 +25,11 @@ const LogisticaAttivazione = () => {
         <TabsContent value="stazioni">
           <Card className="bg-gray-900/60 border-gray-800">
             <CardHeader>
-              <CardTitle>Stazioni</CardTitle>
+              <CardTitle>Stazioni Raggruppate</CardTitle>
             </CardHeader>
             <CardContent>
-              <StazioniTable />
+              {/* Per ora mostriamo tutte le stazioni, in futuro si può aggiungere un selettore di area */}
+              <AreaStationsTab areaId="" />
             </CardContent>
           </Card>
         </TabsContent>
