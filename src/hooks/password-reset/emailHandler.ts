@@ -4,7 +4,7 @@ import { toast } from "@/components/ui/sonner";
 import { createPasswordResetError, PasswordResetError } from "./types";
 
 // Supabase API key
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1kaWNqeHltbnZ0ZWNzenN2dHF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUzNTIzOTUsImV4cCI6MjA2MDkyODM5NX0.opm8RWcqJefHTGeJcvME17oyhaUBsPaw0Lp9VcibIcY";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhnYnZmcmhlbmZrdWpmeXFtenNrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDgwMDM0NTMsImV4cCI6MjA2MzU3OTQ1M30.JAYPlcX-9o6niMx0fMIpi8r6Y3iqkhuuTklD_dCWPd4";
 
 export const useEmailSubmission = () => {
   const handleEmailSubmit = async (email: string) => {
