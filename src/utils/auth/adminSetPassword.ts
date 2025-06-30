@@ -9,7 +9,7 @@ export const adminSetPassword = async (email: string, password: string) => {
  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im10Y3dhcmVxZHJraHBhcmdmcGh1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTEyODU5MTIsImV4cCI6MjA2Njg2MTkxMn0.c_brMTrwYgIrBOvkbC3M4BrR9CpQ2GJNdETOQVH_rZI";
     // Fix: Change function name from admin-reset-password to admin-password-reset
     // This must match the exact folder name in supabase/functions
-    const response = await fetch('https://mtcwareqdrkhpargfphu.functions.supabase.co/admin-password-reset', {
+    const response = await fetch('https://mtcwareqdrkhpargfphu.supabase.co/functions/v1/admin-password-reset', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
