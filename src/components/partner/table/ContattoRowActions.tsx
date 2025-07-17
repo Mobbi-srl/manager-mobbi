@@ -1,7 +1,7 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { Pencil, Trash2, FileText, Camera, Frown, RotateCcw } from "lucide-react";
+import { Pencil, Trash2, FileText, Camera, Frown, RotateCcw, QrCode } from "lucide-react";
 import { Contatto } from "@/hooks/partner/partnerTypes";
 import { useUpdatePartnerStatus } from "@/hooks/partner/useUpdatePartnerStatus";
 
@@ -39,6 +39,10 @@ const ContattoRowActions: React.FC<ContattoRowActionsProps> = ({
   const isAllocato = contatto.partner?.stato === "ALLOCATO";
   const isContratualizzato = contatto.partner?.stato === "CONTRATTUALIZZATO";
   const isPerso = contatto.partner?.stato === "PERSO";
+
+  // Il pulsante "Contrassegna come perso" deve essere mostrato in tutti gli stati
+  // tranne ALLOCATO e CONTRATTUALIZZATO
+  const canMarkAsLost = !isAllocato && !isContratualizzato && !isPerso;
 
   return (
     <div className="flex justify-end gap-2">
@@ -96,7 +100,8 @@ const ContattoRowActions: React.FC<ContattoRowActionsProps> = ({
               <FileText className="h-4 w-4" />
             </Button>
           )}
-          {isAllocato && (
+          {/* Pulsante "Contrassegna come perso" mostrato in tutti gli stati tranne ALLOCATO e CONTRATTUALIZZATO */}
+          {canMarkAsLost && (
             <Button
               variant="warning"
               size="icon"
@@ -115,6 +120,19 @@ const ContattoRowActions: React.FC<ContattoRowActionsProps> = ({
               title="Carica foto stazione"
             >
               <Camera className="h-4 w-4" />
+            </Button>
+          )}
+          {isContratualizzato && (
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => {
+                // TODO: Implementare logica stampa etichetta
+                console.log('Stampa etichetta per partner:', contatto.partner?.id);
+              }}
+              title="Stampa etichetta di spedizione"
+            >
+              <QrCode className="h-4 w-4" />
             </Button>
           )}
           {showDeleteAction && onOpenDeleteDialog && (
