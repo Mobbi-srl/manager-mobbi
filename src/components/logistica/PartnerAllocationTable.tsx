@@ -31,7 +31,7 @@ export const PartnerAllocationTable: React.FC<PartnerAllocationTableProps> = ({ 
     queryFn: async () => {
       console.log("Fetching partners for allocation with role:", userRole);
       
-      // Get all partners that have confirmed ranking
+      // Get all partners that have confirmed ranking and are not in PERSO state
       const { data, error } = await supabase
         .from("partner")
         .select(`
@@ -52,6 +52,7 @@ export const PartnerAllocationTable: React.FC<PartnerAllocationTableProps> = ({ 
           )
         `)
         .eq("ranking_confirmed", true)
+        .neq("stato", "PERSO")
         .order("ranking", { ascending: false });
 
       if (error) {
