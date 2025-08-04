@@ -1,8 +1,9 @@
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { Table, TableBody, TableHeader } from "@/components/ui/table";
+import { Separator } from "@/components/ui/separator";
 import { Contatto } from "@/hooks/partner/partnerTypes";
-import ContattoRow from "./table/ContattoRow";
+import GroupedPartnerRow from "./table/GroupedPartnerRow";
 import ContattiTableHeader from "./table/ContattiTableHeader";
 import DeletePartnerDialog from "./DeletePartnerDialog";
 import ContratualizzaModal from "./ContratualizzaModal";
@@ -12,6 +13,7 @@ interface ContattiTableProps {
   contatti: Contatto[];
   ruolo?: string;
   onEdit?: (contatto: Contatto) => void;
+  onViewDetails?: (contatto: Contatto) => void;
   showDeleteAction?: boolean;
   areaGestori?: Record<string, string>;
   areas?: Record<string, { nome: string; regione: string }>;
@@ -28,6 +30,7 @@ const ContattiTable: React.FC<ContattiTableProps> = ({
   contatti,
   ruolo,
   onEdit,
+  onViewDetails,
   showDeleteAction = false,
   areaGestori,
   areas,
@@ -57,6 +60,34 @@ const ContattiTable: React.FC<ContattiTableProps> = ({
   const isSuperAdminOrMaster = ruolo === "SuperAdmin" || ruolo === "Master";
   const isAdminOrMaster = ruolo === "SuperAdmin" || ruolo === "Master";
 
+  // Raggruppa i contatti per partner
+  const groupedContatti = useMemo(() => {
+    const grouped: { [key: string]: Contatto[] } = {};
+    
+    contatti.forEach(contatto => {
+      if (contatto.partner?.id) {
+        if (!grouped[contatto.partner.id]) {
+          grouped[contatto.partner.id] = [];
+        }
+        grouped[contatto.partner.id].push(contatto);
+      }
+    });
+    
+    return grouped;
+  }, [contatti]);
+
+  // Crea una lista di partner unici con i loro contatti
+  const uniquePartners = useMemo(() => {
+    return Object.values(groupedContatti).map(partnerContatti => {
+      // Usa il primo contatto come rappresentativo del partner
+      const mainContatto = partnerContatti[0];
+      return {
+        ...mainContatto,
+        allContatti: partnerContatti
+      };
+    });
+  }, [groupedContatti]);
+
   return (
     <>
       <div className="rounded-md border">
@@ -67,13 +98,15 @@ const ContattiTable: React.FC<ContattiTableProps> = ({
             isAdminOrMaster={isAdminOrMaster}
           />
           <TableBody>
-            {contatti.map((contatto) => (
-              <ContattoRow
-                key={contatto.id}
-                contatto={contatto}
+            {uniquePartners.map((partnerContatto: any) => (
+              <GroupedPartnerRow
+                key={partnerContatto.partner?.id}
+                mainContatto={partnerContatto}
+                allContatti={partnerContatto.allContatti}
                 onEdit={onEdit}
                 onContratualizza={handleContratualizza}
                 onCaricaFoto={handleCaricaFoto}
+                onViewDetails={onViewDetails}
                 areaGestori={areaGestori}
                 areas={areas}
                 users={users}

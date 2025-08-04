@@ -1,20 +1,18 @@
 
 import { toast } from "sonner";
+import { SUPABASE_CONFIG } from "@/config/supabase";
 
 // Send password setup email with edge function
 export const sendSetPasswordMail = async (email: string) => {
   try {
     console.log("Calling edge function send-set-password-link for:", email);
 
-    // Fix: Add authorization header with Supabase anon key
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im10Y3dhcmVxZHJraHBhcmdmcGh1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTEyODU5MTIsImV4cCI6MjA2Njg2MTkxMn0.c_brMTrwYgIrBOvkbC3M4BrR9CpQ2GJNdETOQVH_rZI";
-    
-    const response = await fetch('https://mtcwareqdrkhpargfphu.supabase.co/functions/v1/send-set-password-link', {
+    const response = await fetch(`${SUPABASE_CONFIG.url}/functions/v1/send-set-password-link`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-        'apikey': SUPABASE_ANON_KEY
+        'Authorization': `Bearer ${SUPABASE_CONFIG.anonKey}`,
+        'apikey': SUPABASE_CONFIG.anonKey
       },
       body: JSON.stringify({ email })
     });

@@ -1,7 +1,7 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { Pencil, Trash2, FileText, Camera, Frown, RotateCcw, QrCode } from "lucide-react";
+import { Pencil, Trash2, FileText, Camera, Frown, RotateCcw, QrCode, Eye } from "lucide-react";
 import { Contatto } from "@/hooks/partner/partnerTypes";
 import { useUpdatePartnerStatus } from "@/hooks/partner/useUpdatePartnerStatus";
 
@@ -12,6 +12,7 @@ interface ContattoRowActionsProps {
   onEdit?: (contatto: Contatto) => void;
   onContratualizza?: (contatto: Contatto) => void;
   onCaricaFoto?: (contatto: Contatto) => void;
+  onViewDetails?: (contatto: Contatto) => void;
   showDeleteAction?: boolean;
   onOpenDeleteDialog?: (contatto: Contatto) => void;
 }
@@ -21,6 +22,7 @@ const ContattoRowActions: React.FC<ContattoRowActionsProps> = ({
   onEdit,
   onContratualizza,
   onCaricaFoto,
+  onViewDetails,
   showDeleteAction = false,
   onOpenDeleteDialog
 }) => {
@@ -46,17 +48,29 @@ const ContattoRowActions: React.FC<ContattoRowActionsProps> = ({
 
   return (
     <div className="flex justify-end gap-2">
-      {/* Se lo stato è ATTIVO, mostra solo il pulsante di cancellazione */}
+      {/* Se lo stato è ATTIVO, mostra pulsante dettagli e cancellazione */}
       {isAttivo ? (
-        showDeleteAction && onOpenDeleteDialog && (
-          <Button
-            variant="destructive"
-            size="icon"
-            onClick={() => onOpenDeleteDialog(contatto)}
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        )
+        <>
+          {onViewDetails && (
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => onViewDetails(contatto)}
+              title="Visualizza dettagli partner"
+            >
+              <Eye className="h-4 w-4" />
+            </Button>
+          )}
+          {showDeleteAction && onOpenDeleteDialog && (
+            <Button
+              variant="destructive"
+              size="icon"
+              onClick={() => onOpenDeleteDialog(contatto)}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          )}
+        </>
       ) : isPerso ? (
         // Per partner nello stato PERSO: solo riporta a CONTATTO o elimina
         <>

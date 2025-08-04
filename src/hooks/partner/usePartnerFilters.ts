@@ -7,12 +7,14 @@ export const usePartnerFilters = () => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [areaFilter, setAreaFilter] = useState("all");
   const [managerFilter, setManagerFilter] = useState("all");
+  const [tipologiaFilter, setTipologiaFilter] = useState("all");
 
   const clearFilters = () => {
     setSearchTerm("");
     setStatusFilter("all");
     setAreaFilter("all");
     setManagerFilter("all");
+    setTipologiaFilter("all");
   };
 
   const filterContatti = useMemo(() => {
@@ -50,10 +52,18 @@ export const usePartnerFilters = () => {
           }
         }
 
+        // Tipologia filter
+        if (tipologiaFilter && tipologiaFilter !== "all") {
+          const partnerTipologia = contatto.partner?.tipologia_locale?.tipologia;
+          if (!partnerTipologia || partnerTipologia !== tipologiaFilter) {
+            return false;
+          }
+        }
+
         return true;
       });
     };
-  }, [searchTerm, statusFilter, areaFilter, managerFilter]);
+  }, [searchTerm, statusFilter, areaFilter, managerFilter, tipologiaFilter]);
 
   return {
     searchTerm,
@@ -64,6 +74,8 @@ export const usePartnerFilters = () => {
     setAreaFilter: (value: string) => setAreaFilter(value === "all" ? "all" : value),
     managerFilter,
     setManagerFilter: (value: string) => setManagerFilter(value === "all" ? "all" : value),
+    tipologiaFilter,
+    setTipologiaFilter: (value: string) => setTipologiaFilter(value === "all" ? "all" : value),
     clearFilters,
     filterContatti
   };

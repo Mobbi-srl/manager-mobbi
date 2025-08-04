@@ -4,6 +4,7 @@ import PartnerManagementHeader from "@/components/partner/PartnerManagementHeade
 import PartnerManagementTabs from "@/components/partner/PartnerManagementTabs";
 import GestoreAreaBadge from "@/components/partner/GestoreAreaBadge";
 import EditPartnerModal from "@/components/partner/EditPartnerModal";
+import PartnerDetailsModal from "@/components/partner/PartnerDetailsModal";
 import { usePartnerSelection, Contatto } from "@/hooks/partner/usePartnerSelection";
 import { useAuth } from "@/hooks/auth";
 import { useUserProfile } from "@/hooks/useUserProfile";
@@ -28,6 +29,8 @@ const GestionePartner = () => {
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [partnerToEdit, setPartnerToEdit] = useState<Contatto | null>(null);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [partnerToView, setPartnerToView] = useState<Contatto | null>(null);
   const [activeTab, setActiveTab] = useState("partner-segnalati");
 
   // Use partner area manager hook
@@ -78,6 +81,11 @@ const GestionePartner = () => {
     setIsEditModalOpen(true);
   };
 
+  const handleViewDetails = (contatto: Contatto) => {
+    setPartnerToView(contatto);
+    setIsDetailsModalOpen(true);
+  };
+
   return (
     <div className="space-y-6">
       <PartnerManagementHeader 
@@ -112,12 +120,19 @@ const GestionePartner = () => {
         handleCancelDelete={handleCancelDelete}
         isDeleteLoading={isDeleteLoading}
         onEditPartner={handleEditPartner}
+        onViewDetails={handleViewDetails}
       />
 
       <EditPartnerModal
         isOpen={isEditModalOpen}
         onOpenChange={setIsEditModalOpen}
         contatto={partnerToEdit}
+      />
+
+      <PartnerDetailsModal
+        isOpen={isDetailsModalOpen}
+        onOpenChange={setIsDetailsModalOpen}
+        contatto={partnerToView}
       />
     </div>
   );

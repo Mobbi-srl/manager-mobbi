@@ -3,6 +3,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Camera, Trash2 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { Contatto } from "@/hooks/partner/partnerTypes";
 import { usePartnerStazioni } from "@/hooks/partner/usePartnerStazioni";
 import { usePartnerDocuments } from "@/hooks/partner/usePartnerDocuments";
@@ -22,6 +24,19 @@ const CaricaFotoStazioneModal: React.FC<CaricaFotoStazioneModalProps> = ({
   const partner = contatto?.partner;
   const { stazioni, isLoading, salvaStazione, attivaPartner, isActivating, isSaving } = usePartnerStazioni(partner?.id);
   const { cleanupOrphanedDocuments, isCleaningUp } = usePartnerDocuments(partner?.id);
+
+  // Query per recuperare i modelli stazione con tipologia
+  const { data: modelliStazione = [] } = useQuery({
+    queryKey: ["modelli-stazione"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("modelli_stazione")
+        .select("id, nome, tipologia, slot, descrizione");
+      
+      if (error) throw error;
+      return data || [];
+    }
+  });
 
   // Ottieni le stazioni allocate dal campo stazioni_allocate del partner
   const stazioniAllocate = React.useMemo(() => {
@@ -56,22 +71,32 @@ const CaricaFotoStazioneModal: React.FC<CaricaFotoStazioneModalProps> = ({
 
       const result = allocate.map((stazione, index) => {
         // Handle different possible formats
-        let modelName, colorName;
+        let modelName, colorName, tipologia;
 
         if (stazione.model) {
           modelName = stazione.model.modelName;
           colorName = stazione.model.colorName;
+          tipologia = stazione.model.tipologia;
         } else if (stazione.modelName) {
           modelName = stazione.modelName;
           colorName = stazione.colorName;
+          tipologia = stazione.tipologia;
         } else {
           modelName = `Stazione ${index + 1}`;
           colorName = 'N/A';
+          tipologia = 'N/A';
+        }
+
+        // Se la tipologia non è presente nelle stazioni allocate, cerca nei modelli
+        if (!tipologia || tipologia === 'N/A') {
+          const modelloFound = modelliStazione.find(m => m.nome === modelName);
+          tipologia = modelloFound?.tipologia || 'N/A';
         }
 
         return {
           modello: modelName,
           colore: colorName,
+          tipologia: tipologia,
           quantity: stazione.quantity || 1
         };
       });
@@ -81,7 +106,7 @@ const CaricaFotoStazioneModal: React.FC<CaricaFotoStazioneModalProps> = ({
       console.error("❌ Error parsing stazioni_allocate:", error);
       return [];
     }
-  }, [partner?.stazioni_allocate]);
+  }, [partner?.stazioni_allocate, modelliStazione]); // Aggiungi modelliStazione alle dipendenze
 
   // Espandi le stazioni in base alla quantità e associa i dati salvati usando un indice sequenziale
   const stazioniExpanded = React.useMemo(() => {
@@ -123,6 +148,7 @@ const CaricaFotoStazioneModal: React.FC<CaricaFotoStazioneModalProps> = ({
           id: stazioneSalvata?.id,
           modello: stazione.modello,
           colore: stazione.colore,
+          tipologia: stazione.tipologia,
           numero_seriale: stazioneSalvata?.numero_seriale || "",
           documento_allegato: stazioneSalvata?.documento_allegato || "",
           key: `${stazioneIndex}-${i}`,
@@ -187,10 +213,168 @@ const CaricaFotoStazioneModal: React.FC<CaricaFotoStazioneModalProps> = ({
     }
 
     try {
+      // Prima configura le stazioni su LYTE
+      const stationsData = stazioniExpanded.map(stazione => ({
+        numero_seriale: stazione.numero_seriale,
+        modello: stazione.modello,
+        colore: stazione.colore
+      }));
+
+      const partnerName = partner.nome_locale || partner.ragione_sociale || "Partner";
+
+      console.log("🚀 Configurazione stazioni su LYTE:", { stationsData, partnerName });
+
+      const { supabase } = await import("@/integrations/supabase/client");
+      
+      const response = await supabase.functions.invoke('activate-partner-stations', {
+        body: {
+          stations: stationsData,
+          partnerName: partnerName
+        }
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message || "Errore nella configurazione delle stazioni");
+      }
+
+      console.log("✅ Stazioni configurate su LYTE con successo");
+
+      // Prima di inviare i dati merchant, verifica e completa le informazioni mancanti
+      let updatedPartner = partner;
+      
+      // Controlla se il partner ha informazioni mancanti che potrebbero essere recuperate da Google Places
+      const needsGooglePlacesData = !partner.latitude || !partner.longitude || 
+                                   partner.latitude === 0 || partner.longitude === 0 ||
+                                   !partner.phone_number_google || !partner.place_id_g_place || 
+                                   !partner.img_url_gplace1 || !partner.weekday_text ||
+                                   (Array.isArray(partner.weekday_text) && partner.weekday_text.length === 0);
+      
+      if (needsGooglePlacesData) {
+        console.log("🔍 Partner missing data, attempting Google Places fallback...");
+        
+        try {
+          const partnerName = partner.nome_locale || partner.ragione_sociale || "Partner";
+          const address = partner.indirizzo_operativa || 
+                         `${partner.indirizzo_legale || ""}, ${partner.citta_legale || ""}, ${partner.cap_legale || ""}, ${partner.nazione_legale || ""}`.replace(/^,\s*|,\s*$/g, '').replace(/,\s*,/g, ',');
+          
+          console.log(`🔍 Calling Google Places fallback for: ${partnerName} at ${address}`);
+          
+          const { data: fallbackData, error: fallbackError } = await supabase.functions.invoke('google-places-fallback', {
+            body: {
+              partnerName: partnerName,
+              address: address
+            }
+          });
+
+          if (fallbackError) {
+            console.error("❌ Error calling Google Places fallback function:", fallbackError);
+          } else if (fallbackData?.success) {
+            const googleData = fallbackData.data;
+            console.log("✅ Received Google Places data:", {
+              coordinates: `${googleData.latitude}, ${googleData.longitude}`,
+              phone: googleData.phone_number_google,
+              place_id: googleData.place_id_g_place,
+              photos: [googleData.img_url_gplace1, googleData.img_url_gplace2].filter(Boolean).length,
+              opening_hours: googleData.weekday_text?.length || 0
+            });
+
+            // Aggiorna il partner con i dati Google Places
+            const updateData: any = {};
+            
+            if (googleData.latitude && googleData.longitude && (!partner.latitude || partner.latitude === 0)) {
+              updateData.latitude = googleData.latitude;
+              updateData.longitude = googleData.longitude;
+            }
+            
+            if (googleData.phone_number_google && !partner.phone_number_google) {
+              updateData.phone_number_google = googleData.phone_number_google;
+            }
+            
+            if (googleData.place_id_g_place && !partner.place_id_g_place) {
+              updateData.place_id_g_place = googleData.place_id_g_place;
+            }
+            
+            if (googleData.img_url_gplace1 && !partner.img_url_gplace1) {
+              updateData.img_url_gplace1 = googleData.img_url_gplace1;
+            }
+            
+            if (googleData.img_url_gplace2 && !partner.img_url_gplace2) {
+              updateData.img_url_gplace2 = googleData.img_url_gplace2;
+            }
+            
+            if (googleData.weekday_text && googleData.weekday_text.length > 0 && (!partner.weekday_text || (Array.isArray(partner.weekday_text) && partner.weekday_text.length === 0))) {
+              updateData.weekday_text = googleData.weekday_text;
+            }
+
+            if (Object.keys(updateData).length > 0) {
+              console.log("💾 Updating partner with Google Places data:", updateData);
+              
+              const { error: updateError } = await supabase
+                .from('partner')
+                .update(updateData)
+                .eq('id', partner.id);
+
+              if (updateError) {
+                console.error("❌ Error updating partner:", updateError);
+              } else {
+                console.log("✅ Partner updated successfully with Google Places data");
+                updatedPartner = { ...partner, ...updateData };
+              }
+            }
+          } else {
+            console.warn("⚠️ Google Places fallback returned no data:", fallbackData?.error);
+          }
+        } catch (googleError) {
+          console.error("❌ Google Places fallback failed:", googleError);
+          // Continua comunque con i dati esistenti
+        }
+      } else {
+        console.log("✅ Partner already has all Google Places data");
+      }
+
+      // Dopo l'attivazione LYTE, invia i dati merchant per ogni stazione
+      const merchantPromises = stazioniExpanded.map(async (stazione) => {
+        const merchantData = {
+          name: updatedPartner.nome_locale || updatedPartner.ragione_sociale || "Partner",
+          deviceType: stazione.tipologia || "N/A",
+          lat: updatedPartner.latitude || 0,
+          lng: updatedPartner.longitude || 0,
+          tel: updatedPartner.phone_number_google || updatedPartner.telefono || "",
+          address: `${updatedPartner.indirizzo_operativa || ""}, ${updatedPartner.citta_operativa || ""}, ${updatedPartner.cap_operativa || ""}`.replace(/^,\s*|,\s*$/g, '').replace(/,\s*,/g, ',') ||
+                  "Indirizzo non disponibile",
+          weekday_text: updatedPartner.weekday_text || [],
+          placeId: updatedPartner.place_id_g_place || "",
+          img1UrlGoogle: updatedPartner.img_url_gplace1 || "",
+          img2UrlGoogle: updatedPartner.img_url_gplace2 || "",
+          imei: stazione.numero_seriale || ""
+        };
+
+        console.log(`📤 Sending merchant data for station ${stazione.modello}:`, merchantData);
+
+        const merchantResponse = await supabase.functions.invoke('send-merchant-data', {
+          body: merchantData
+        });
+
+        if (merchantResponse.error) {
+          console.error(`❌ Error sending merchant data for station ${stazione.modello}:`, merchantResponse.error);
+          throw new Error(`Errore nell'invio dati merchant per stazione ${stazione.modello}: ${merchantResponse.error.message}`);
+        }
+
+        console.log(`✅ Merchant data sent successfully for station ${stazione.modello}`);
+        return merchantResponse;
+      });
+
+      // Aspetta che tutti i dati merchant siano inviati
+      await Promise.all(merchantPromises);
+      console.log("✅ All merchant data sent successfully");
+
+      // Solo se tutto va a buon fine, attiva il partner
       await attivaPartner(partner.id);
+      toast.success("Partner attivato e stazioni configurate con successo!");
       onOpenChange(false);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error activating partner:", error);
+      toast.error(error.message || "Errore durante l'attivazione del partner");
     }
   };
 
@@ -258,6 +442,7 @@ const CaricaFotoStazioneModal: React.FC<CaricaFotoStazioneModalProps> = ({
                     <tr>
                       <th className="border p-2 text-left">Modello</th>
                       <th className="border p-2 text-left">Colore</th>
+                      <th className="border p-2 text-left">Tipologia</th>
                       <th className="border p-2 text-left">Numero Seriale</th>
                       <th className="border p-2 text-left">Foto Stazione</th>
                       <th className="border p-2 text-left">Azioni</th>

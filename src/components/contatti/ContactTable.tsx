@@ -1,6 +1,8 @@
 
 import React from "react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Edit } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -20,9 +22,10 @@ interface ContactTableProps {
     ruolo?: string;
     isLegalRep?: boolean;
   }>;
+  onEdit?: (contatto: any) => void;
 }
 
-const ContactTable: React.FC<ContactTableProps> = ({ contatti }) => {
+const ContactTable: React.FC<ContactTableProps> = ({ contatti, onEdit }) => {
   return (
     <Table>
       <TableHeader>
@@ -32,6 +35,7 @@ const ContactTable: React.FC<ContactTableProps> = ({ contatti }) => {
           <TableHead>Email</TableHead>
           <TableHead>Numero</TableHead>
           <TableHead>Ruolo</TableHead>
+          {onEdit && <TableHead>Azioni</TableHead>}
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -51,6 +55,18 @@ const ContactTable: React.FC<ContactTableProps> = ({ contatti }) => {
             <TableCell className="max-w-[200px] truncate">{contatto.email || "-"}</TableCell>
             <TableCell>{contatto.numero || "-"}</TableCell>
             <TableCell>{contatto.ruolo || "-"}</TableCell>
+            {onEdit && (
+              <TableCell>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => onEdit(contatto)}
+                  className="h-8 w-8 p-0"
+                >
+                  <Edit className="h-4 w-4" />
+                </Button>
+              </TableCell>
+            )}
           </TableRow>
         ))}
       </TableBody>

@@ -16,6 +16,27 @@ export const usePlaceSelection = (form: UseFormReturn<PartnerFormValues>) => {
       form.setValue("nomeLocale", place.name, { shouldValidate: true });
     }
 
+    // Extract Google Places data
+    const coordinates = {
+      lat: place.geometry?.location?.lat() ?? 0,
+      lng: place.geometry?.location?.lng() ?? 0,
+    };
+
+    // Save Google Places data in form (hidden from UI)
+    form.setValue("latitude", coordinates.lat, { shouldValidate: true });
+    form.setValue("longitude", coordinates.lng, { shouldValidate: true });
+    form.setValue("phoneNumberGoogle", place.formatted_phone_number || "", { shouldValidate: true });
+    form.setValue("weekdayText", place.opening_hours?.weekday_text || [], { shouldValidate: true });
+    form.setValue("placeIdGPlace", place.place_id || "", { shouldValidate: true });
+
+    // Extract photo URLs
+    const photos = Array.isArray(place.photos)
+      ? place.photos.slice(0, 2).map((p) => p.getUrl?.({ maxWidth: 600 }) ?? "")
+      : [];
+    
+    if (photos[0]) form.setValue("imgUrlGplace1", photos[0], { shouldValidate: true });
+    if (photos[1]) form.setValue("imgUrlGplace2", photos[1], { shouldValidate: true });
+
     let streetNumber = "";
     let route = "";
 

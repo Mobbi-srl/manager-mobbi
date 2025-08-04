@@ -38,9 +38,11 @@ export const useUpdatePartnerStatus = () => {
       
       toast.success(statusMessages[data.newStatus] || 'Stato partner aggiornato');
       
-      // Invalidate relevant queries to refresh the data
+      // Invalidate all relevant queries to refresh the data across components
       queryClient.invalidateQueries({ queryKey: ["contatti"] });
       queryClient.invalidateQueries({ queryKey: ["partner"] });
+      queryClient.invalidateQueries({ queryKey: ["area_partners"] }); // Added for area details
+      queryClient.invalidateQueries({ queryKey: ["area_basic"] }); // Added for area details
     },
     onError: (error: any) => {
       console.error("❌ Failed to update partner status:", error);

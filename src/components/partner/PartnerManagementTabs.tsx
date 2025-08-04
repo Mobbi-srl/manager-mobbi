@@ -30,6 +30,7 @@ interface PartnerManagementTabsProps {
   handleCancelDelete: () => void;
   isDeleteLoading: boolean;
   onEditPartner: (contatto: Contatto) => void;
+  onViewDetails?: (contatto: Contatto) => void;
 }
 
 const PartnerManagementTabs: React.FC<PartnerManagementTabsProps> = ({
@@ -55,7 +56,8 @@ const PartnerManagementTabs: React.FC<PartnerManagementTabsProps> = ({
   handleDeletePartner,
   handleCancelDelete,
   isDeleteLoading,
-  onEditPartner
+  onEditPartner,
+  onViewDetails
 }) => {
   const isLoading = isLoadingContatti || isLoadingAreaManagers || isLoadingAreas;
   
@@ -92,6 +94,7 @@ const PartnerManagementTabs: React.FC<PartnerManagementTabsProps> = ({
                 ruolo={ruolo}
                 contatti={filteredContatti}
                 onEdit={onEditPartner}
+                onViewDetails={onViewDetails}
                 showDeleteAction={isSuperAdmin || isMaster || isGestore || isAgenzia}
                 areaGestori={areaGestori}
                 areas={areasData}

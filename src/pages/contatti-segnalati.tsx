@@ -6,8 +6,10 @@ import { Contact } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { StatoPartner } from "@/hooks/partner/types";
+import { Contatto } from "@/hooks/partner/partnerTypes";
 import ContattiFilters from "@/components/contatti/ContattiFilters";
 import ContactGroup from "@/components/contatti/ContactGroup";
+import EditContattoModal from "@/components/contatti/EditContattoModal";
 
 interface Partner {
   id: string;
@@ -20,7 +22,7 @@ interface Partner {
   telefono?: string;
 }
 
-interface Contatto {
+interface ContattoLocal {
   id: string;
   nome: string;
   cognome: string;
@@ -33,7 +35,7 @@ interface Contatto {
 
 interface GroupedContacts {
   partner: Partner;
-  contatti: (Contatto | { 
+  contatti: (ContattoLocal | { 
     id: string; 
     nome?: string; 
     cognome?: string; 
@@ -50,6 +52,8 @@ const ContattiSegnalati = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [openItems, setOpenItems] = useState<string[]>([]);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [selectedContatto, setSelectedContatto] = useState<any | null>(null);
 
   // Fetch dei contatti da Supabase
   const { data: contatti, isLoading, error } = useQuery({
@@ -78,7 +82,7 @@ const ContattiSegnalati = () => {
         `);
 
       if (error) throw error;
-      return data as Contatto[];
+      return data as ContattoLocal[];
     },
   });
 
@@ -173,6 +177,11 @@ const ContattiSegnalati = () => {
     );
   };
 
+  const handleEditContatto = (contatto: any) => {
+    setSelectedContatto(contatto);
+    setEditModalOpen(true);
+  };
+
   // Funzione per esportare i contatti in CSV
   const exportToCSV = () => {
     if (!contatti || contatti.length === 0) return;
@@ -242,6 +251,7 @@ const ContattiSegnalati = () => {
                     group={group}
                     isOpen={openItems.includes(group.partner.id)}
                     onToggle={() => toggleItem(group.partner.id)}
+                    onEdit={handleEditContatto}
                   />
                 ))}
               </div>
@@ -253,6 +263,12 @@ const ContattiSegnalati = () => {
           </ScrollArea>
         </CardContent>
       </Card>
+
+      <EditContattoModal
+        isOpen={editModalOpen}
+        onOpenChange={setEditModalOpen}
+        contatto={selectedContatto}
+      />
     </div>
   );
 };

@@ -30,9 +30,10 @@ interface ContactGroupProps {
   };
   isOpen: boolean;
   onToggle: () => void;
+  onEdit?: (contatto: any) => void;
 }
 
-const ContactGroup: React.FC<ContactGroupProps> = ({ group, isOpen, onToggle }) => {
+const ContactGroup: React.FC<ContactGroupProps> = ({ group, isOpen, onToggle, onEdit }) => {
   const isMobile = useIsMobile();
 
   const getStatusBadge = (status: StatoPartner | undefined | string) => {
@@ -95,11 +96,11 @@ const ContactGroup: React.FC<ContactGroupProps> = ({ group, isOpen, onToggle }) 
             {isMobile ? (
               <div className="space-y-3 p-4">
                 {group.contatti.map((contatto) => (
-                  <ContactCard key={contatto.id} contatto={contatto} />
+                  <ContactCard key={contatto.id} contatto={contatto} onEdit={onEdit} />
                 ))}
               </div>
             ) : (
-              <ContactTable contatti={group.contatti} />
+              <ContactTable contatti={group.contatti} onEdit={onEdit} />
             )}
           </div>
         </CollapsibleContent>

@@ -40,9 +40,28 @@ export interface Partner {
   stato: "CONTATTO" | "APPROVATO" | "SELEZIONATO" | "ALLOCATO" | "CONTRATTUALIZZATO" | "PERSO" | "ATTIVO";
   segnalato_da?: string;
   codice_utente_segnalatore?: string;
+  note?: string;
   area_id?: string;
   comune_operativa_id?: string;
   data_installazione_richiesta?: string;
+  // Google Places data
+  latitude?: number;
+  longitude?: number;
+  phone_number_google?: string;
+  weekday_text?: string[];
+  place_id_g_place?: string;
+  img_url_gplace1?: string;
+  img_url_gplace2?: string;
+  // Relations
+  area?: {
+    id: string;
+    nome: string;
+    regione: string;
+  };
+  tipologia_locale?: {
+    id: string;
+    tipologia: string;
+  };
 }
 
 export interface Contatto {

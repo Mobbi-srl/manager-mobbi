@@ -66,6 +66,14 @@ export const formatPartnerData = (formValues: PartnerFormValues, creatorInfo: an
     richiesta_stazioni: richiestaStazioniData, // Send array directly without stringify
     area_id: formValues.areaId || null,
     note: formValues.note || null, // Add note field
+    // Google Places data
+    latitude: formValues.latitude || null,
+    longitude: formValues.longitude || null,
+    phone_number_google: formValues.phoneNumberGoogle || null,
+    weekday_text: formValues.weekdayText || null,
+    place_id_g_place: formValues.placeIdGPlace || null,
+    img_url_gplace1: formValues.imgUrlGplace1 || null,
+    img_url_gplace2: formValues.imgUrlGplace2 || null,
     segnalato_da: creatorInfo.userId,
     codice_utente_segnalatore: creatorInfo.userDisplayName
   };

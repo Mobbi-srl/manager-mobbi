@@ -9,6 +9,7 @@ import { PartnerFormValues, ContattoFormValues } from "@/hooks/partner/types";
 import { PartnerDetailsFields } from "./PartnerDetailsFields";
 import { ContattoFormFields } from "./ContattoFormFields";
 import { ContattiList } from "./ContattiList";
+import { sanitizeInput } from "@/utils/security/inputValidation";
 
 interface PartnerFormProps {
   form: UseFormReturn<PartnerFormValues>;

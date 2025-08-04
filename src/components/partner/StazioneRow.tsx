@@ -4,12 +4,29 @@ import { Button } from "@/components/ui/button";
 import { Upload, Check, X, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { usePartnerDocuments } from "@/hooks/partner/usePartnerDocuments";
+import { useKioskSerialNumbers } from "@/hooks/partner/useKioskSerialNumbers";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+import { CaretSortIcon, CheckIcon } from "@radix-ui/react-icons";
 
 interface StazioneRowProps {
   stazione: {
     id?: string;
     modello: string;
     colore: string;
+    tipologia?: string;
     numero_seriale?: string;
     documento_allegato?: string;
   };
@@ -41,8 +58,10 @@ export const StazioneRow: React.FC<StazioneRowProps> = ({
   const [fotoFile, setFotoFile] = useState<File | null>(null);
   const [documentoEsistente, setDocumentoEsistente] = useState("");
   const [isSaved, setIsSaved] = useState(false);
+  const [open, setOpen] = useState(false);
   
   const { uploadDocument, deleteDocument, isUploading, isDeleting } = usePartnerDocuments(partnerId);
+  const { data: kioskSerials = [], isLoading: loadingSerials } = useKioskSerialNumbers();
 
   // Inizializza i dati quando la stazione cambia o quando i dati vengono caricati
   useEffect(() => {
@@ -207,16 +226,63 @@ export const StazioneRow: React.FC<StazioneRowProps> = ({
         <span className="text-sm">{stazione.colore}</span>
       </td>
       <td className="p-2">
-        <Input
-          value={numeroSeriale}
-          onChange={(e) => {
-            setNumeroSeriale(e.target.value);
-            setIsSaved(false);
-          }}
-          placeholder="Numero seriale"
-          disabled={isProcessing}
-          className="w-full"
-        />
+        <span className="text-sm">{stazione.tipologia || "N/A"}</span>
+      </td>
+      <td className="p-2">
+        <Popover open={open} onOpenChange={setOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              role="combobox"
+              aria-expanded={open}
+              className="w-full justify-between"
+              disabled={isProcessing || loadingSerials}
+            >
+              {numeroSeriale
+                ? kioskSerials.find((serial) => serial === numeroSeriale)
+                : loadingSerials 
+                  ? "Caricamento numeri seriali..." 
+                  : kioskSerials.length === 0 
+                    ? "Nessun numero seriale disponibile" 
+                    : "Seleziona numero seriale"}
+              <CaretSortIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-full p-0 z-[9999]">
+            <Command>
+              <CommandInput 
+                placeholder="Cerca numero seriale..." 
+                className="h-9"
+              />
+              <CommandList>
+                <CommandEmpty>
+                  {loadingSerials ? "Caricamento..." : "Nessun numero seriale trovato."}
+                </CommandEmpty>
+                <CommandGroup>
+                  {kioskSerials.map((serial) => (
+                    <CommandItem
+                      key={serial}
+                      value={serial}
+                      onSelect={(currentValue) => {
+                        setNumeroSeriale(currentValue === numeroSeriale ? "" : currentValue);
+                        setIsSaved(false);
+                        setOpen(false);
+                      }}
+                    >
+                      {serial}
+                      <CheckIcon
+                        className={cn(
+                          "ml-auto h-4 w-4",
+                          numeroSeriale === serial ? "opacity-100" : "opacity-0"
+                        )}
+                      />
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </CommandList>
+            </Command>
+          </PopoverContent>
+        </Popover>
       </td>
       <td className="p-2">
         <div className="space-y-2">

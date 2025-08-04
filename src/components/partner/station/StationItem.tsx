@@ -63,7 +63,7 @@ export const StationItem: React.FC<StationItemProps> = ({
         <X className="h-4 w-4" />
       </Button>
       
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {/* Encapsulate each select in its own container with higher z-index */}
         <div 
           className="relative" 
@@ -90,6 +90,16 @@ export const StationItem: React.FC<StationItemProps> = ({
             handleColorChange={handleColorChange}
             modelName={modelName}
           />
+        </div>
+
+        {/* Tipologia Column */}
+        <div className="relative">
+          <label className="block text-sm font-medium text-white mb-1">
+            Tipologia
+          </label>
+          <div className="p-2 bg-gray-800 rounded border border-gray-600 text-white text-sm min-h-[40px] flex items-center">
+            {models.find(m => m.id === form.watch(`richiestaStazioni.${index}.modelId`))?.tipologia || "N/A"}
+          </div>
         </div>
         
         <div 

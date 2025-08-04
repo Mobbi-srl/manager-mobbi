@@ -1,1 +1,4 @@
-project_id = "mtcwareqdrkhpargfphu"
+project_id = "xgbvfrhenfkujfyqmzsk"
+
+[functions.google-places-fallback]
+verify_jwt = false

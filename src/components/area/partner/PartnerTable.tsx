@@ -49,7 +49,7 @@ const PartnerTable: React.FC<PartnerTableProps> = ({
   const filteredPartners = useMemo(() => {
     const term = searchTerm.toLowerCase();
     return partners.filter((partner) => {
-      const name = partner.ragione_sociale || partner.nome_locale || "";
+      const name = partner.nome_locale || partner.ragione_sociale || "";
       const address = partner.indirizzo_operativa || "";
       const status = partner.stato || "";
       const urgency = partner.ranking?.toString() || "";
@@ -111,7 +111,7 @@ const PartnerTable: React.FC<PartnerTableProps> = ({
                     {/* Partner info */}
                     <div className="flex flex-col gap-2">
                       <div className="font-medium text-sm">
-                        {partner.ragione_sociale || partner.nome_locale || "N/A"}
+                        {partner.nome_locale || partner.ragione_sociale || "N/A"}
                       </div>
                       <div className="text-xs text-muted-foreground">
                         {partner.indirizzo_operativa || "N/A"}

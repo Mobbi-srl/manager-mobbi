@@ -16,6 +16,7 @@ interface ContattoRowProps {
   onEdit?: (contatto: Contatto) => void;
   onContratualizza?: (contatto: Contatto) => void;
   onCaricaFoto?: (contatto: Contatto) => void;
+  onViewDetails?: (contatto: Contatto) => void;
   areaGestori?: Record<string, string>;
   areas?: Record<string, { nome: string; regione: string }>;
   users?: Record<string, { nome: string; cognome: string; ruolo: string; email: string }>;
@@ -31,6 +32,7 @@ const ContattoRow: React.FC<ContattoRowProps> = ({
   onEdit,
   onContratualizza,
   onCaricaFoto,
+  onViewDetails,
   areaGestori = {},
   areas,
   users,
@@ -117,6 +119,7 @@ const ContattoRow: React.FC<ContattoRowProps> = ({
               onEdit={onEdit}
               onContratualizza={onContratualizza}
               onCaricaFoto={onCaricaFoto}
+              onViewDetails={onViewDetails}
               showDeleteAction={showDeleteAction}
               onOpenDeleteDialog={onOpenDeleteDialog}
             />
@@ -180,6 +183,7 @@ const ContattoRow: React.FC<ContattoRowProps> = ({
             onEdit={onEdit}
             onContratualizza={onContratualizza}
             onCaricaFoto={onCaricaFoto}
+            onViewDetails={onViewDetails}
             showDeleteAction={showDeleteAction}
             onOpenDeleteDialog={onOpenDeleteDialog}
           />

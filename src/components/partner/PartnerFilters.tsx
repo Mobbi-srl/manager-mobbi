@@ -6,6 +6,7 @@ import { Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
+import { useLocali } from "@/hooks/partner/useLocali";
 
 interface PartnerFiltersProps {
   searchTerm: string;
@@ -16,6 +17,8 @@ interface PartnerFiltersProps {
   onAreaFilterChange: (value: string) => void;
   managerFilter: string;
   onManagerFilterChange: (value: string) => void;
+  tipologiaFilter: string;
+  onTipologiaFilterChange: (value: string) => void;
   areas?: Record<string, { nome: string; regione: string }>;
   areaGestori?: Record<string, string>;
   showManagerFilter?: boolean;
@@ -41,12 +44,15 @@ const PartnerFilters: React.FC<PartnerFiltersProps> = ({
   onAreaFilterChange,
   managerFilter,
   onManagerFilterChange,
+  tipologiaFilter,
+  onTipologiaFilterChange,
   areas,
   areaGestori,
   showManagerFilter = true,
   onClearFilters
 }) => {
-  const hasActiveFilters = searchTerm || (statusFilter && statusFilter !== "all") || (areaFilter && areaFilter !== "all") || (managerFilter && managerFilter !== "all");
+  const { locali } = useLocali();
+  const hasActiveFilters = searchTerm || (statusFilter && statusFilter !== "all") || (areaFilter && areaFilter !== "all") || (managerFilter && managerFilter !== "all") || (tipologiaFilter && tipologiaFilter !== "all");
 
   // Get unique managers from areaGestori
   const uniqueManagers = React.useMemo(() => {
@@ -104,6 +110,20 @@ const PartnerFilters: React.FC<PartnerFiltersProps> = ({
           </SelectContent>
         </Select>
 
+        <Select value={tipologiaFilter || "all"} onValueChange={onTipologiaFilterChange}>
+          <SelectTrigger className="w-full xl:w-[200px]">
+            <SelectValue placeholder="Filtra per tipologia" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tutte le tipologie</SelectItem>
+            {locali.map((locale) => (
+              <SelectItem key={locale.id} value={locale.tipologia}>
+                {locale.tipologia.charAt(0).toUpperCase() + locale.tipologia.slice(1).toLowerCase()}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
         {showManagerFilter && (
           <Select value={managerFilter || "all"} onValueChange={onManagerFilterChange}>
             <SelectTrigger className="w-full xl:w-[200px]">
@@ -153,6 +173,11 @@ const PartnerFilters: React.FC<PartnerFiltersProps> = ({
           {managerFilter && managerFilter !== "all" && (
             <Badge variant="secondary">
               Gestore: {managerFilter}
+            </Badge>
+          )}
+          {tipologiaFilter && tipologiaFilter !== "all" && (
+            <Badge variant="secondary">
+              Tipologia: {tipologiaFilter}
             </Badge>
           )}
         </div>

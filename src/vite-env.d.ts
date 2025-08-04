@@ -9,11 +9,11 @@ declare namespace google {
       function clearInstanceListeners(instance: object): void;
       function addListener(instance: object, eventName: string, handler: Function): MapsEventListener;
     }
-    
+
     interface MapsEventListener {
       remove(): void;
     }
-    
+
     class Geocoder {
       constructor();
       geocode(
@@ -21,15 +21,15 @@ declare namespace google {
         callback: (results: GeocoderResult[], status: GeocoderStatus) => void
       ): void;
     }
-    
+
     interface GeocoderRequest {
       address?: string;
-      location?: {lat: number, lng: number};
+      location?: { lat: number, lng: number };
       bounds?: google.maps.LatLngBounds | google.maps.LatLngBoundsLiteral;
       componentRestrictions?: ComponentRestrictions;
       region?: string;
     }
-    
+
     interface GeocoderResult {
       address_components: AddressComponent[];
       formatted_address: string;
@@ -50,25 +50,25 @@ declare namespace google {
       };
       types: string[];
     }
-    
-    type GeocoderStatus = 
+
+    type GeocoderStatus =
       'OK' |
       'ZERO_RESULTS' |
       'OVER_QUERY_LIMIT' |
       'REQUEST_DENIED' |
       'INVALID_REQUEST' |
       'UNKNOWN_ERROR';
-    
+
     interface ComponentRestrictions {
       country: string | string[];
     }
-    
+
     interface AddressComponent {
       long_name: string;
       short_name: string;
       types: string[];
     }
-    
+
     namespace places {
       // Legacy Autocomplete class (deprecated but kept for fallback)
       class Autocomplete {
@@ -79,7 +79,7 @@ declare namespace google {
         addListener(eventName: string, handler: () => void): void;
         getPlace(): PlaceResult;
       }
-      
+
       // New PlaceAutocompleteElement class
       class PlaceAutocompleteElement extends HTMLElement {
         constructor(options: PlaceAutocompleteElementOptions);
@@ -87,7 +87,7 @@ declare namespace google {
         removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): void;
         getAttribute(name: string): string | null;
       }
-      
+
       // PlacesService for getting detailed place information
       class PlacesService {
         constructor(attrContainer: HTMLElement | google.maps.Map);
@@ -96,12 +96,12 @@ declare namespace google {
           callback: (result: PlaceResult | null, status: PlacesServiceStatus) => void
         ): void;
       }
-      
+
       interface PlaceDetailsRequest {
         placeId: string;
         fields?: string[];
       }
-      
+
       // Status constants returned by PlacesService
       enum PlacesServiceStatus {
         OK = "OK",
@@ -112,7 +112,7 @@ declare namespace google {
         UNKNOWN_ERROR = "UNKNOWN_ERROR",
         NOT_FOUND = "NOT_FOUND"
       }
-      
+
       interface PlaceAutocompleteElementOptions {
         inputElement: HTMLInputElement;
         bounds?: google.maps.LatLngBounds | google.maps.LatLngBoundsLiteral;
@@ -120,7 +120,7 @@ declare namespace google {
         strictBounds?: boolean;
         types?: string[];
       }
-      
+
       interface AutocompleteOptions {
         bounds?: google.maps.LatLngBounds | google.maps.LatLngBoundsLiteral;
         componentRestrictions?: ComponentRestrictions;
@@ -128,7 +128,7 @@ declare namespace google {
         strictBounds?: boolean;
         types?: string[];
       }
-      
+
       interface PlaceResult {
         address_components?: AddressComponent[];
         formatted_address?: string;
@@ -147,6 +147,33 @@ declare namespace google {
         };
         types?: string[];
         website?: string;
+        formatted_phone_number?: string;
+        international_phone_number?: string;
+        opening_hours?: {
+          open_now: boolean;
+          periods: Array<{
+            open: {
+              day: number;
+              time: string;
+              hours: number;
+              minutes: number;
+            };
+            close: {
+              day: number;
+              time: string;
+              hours: number;
+              minutes: number;
+            };
+          }>;
+          weekday_text: string[];
+        };
+        photos?: Array<{
+          height: number;
+          width: number;
+          html_attributions: string[];
+          getUrl?: (options?: { maxWidth?: number; maxHeight?: number }) => string;
+        }>;
+        url?: string;
       }
     }
   }
@@ -185,5 +212,5 @@ interface CustomEventMap {
 }
 
 declare global {
-  interface HTMLElementEventMap extends CustomEventMap {}
+  interface HTMLElementEventMap extends CustomEventMap { }
 }

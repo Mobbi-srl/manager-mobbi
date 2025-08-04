@@ -12,6 +12,7 @@ interface PartnersByAreaSectionProps {
   contatti: Contatto[];
   ruolo?: string;
   onEdit?: (contatto: Contatto) => void;
+  onViewDetails?: (contatto: Contatto) => void;
   showDeleteAction?: boolean;
   areaGestori?: Record<string, string>;
   areas?: Record<string, { nome: string; regione: string; comuni?: string[] }>;
@@ -28,6 +29,7 @@ const PartnersByAreaSection: React.FC<PartnersByAreaSectionProps> = ({
   contatti,
   ruolo,
   onEdit,
+  onViewDetails,
   showDeleteAction = false,
   areaGestori,
   areas,
@@ -50,6 +52,8 @@ const PartnersByAreaSection: React.FC<PartnersByAreaSectionProps> = ({
     setAreaFilter,
     managerFilter,
     setManagerFilter,
+    tipologiaFilter,
+    setTipologiaFilter,
     clearFilters,
     filterContatti
   } = usePartnerFilters();
@@ -126,6 +130,8 @@ const PartnersByAreaSection: React.FC<PartnersByAreaSectionProps> = ({
         onAreaFilterChange={setAreaFilter}
         managerFilter={managerFilter}
         onManagerFilterChange={setManagerFilter}
+        tipologiaFilter={tipologiaFilter}
+        onTipologiaFilterChange={setTipologiaFilter}
         areas={areas}
         areaGestori={areaGestori}
         showManagerFilter={!isGestore}
@@ -175,6 +181,7 @@ const PartnersByAreaSection: React.FC<PartnersByAreaSectionProps> = ({
                       ruolo={ruolo}
                       contatti={areaContatti}
                       onEdit={onEdit}
+                      onViewDetails={onViewDetails}
                       showDeleteAction={showDeleteAction}
                       areaGestori={areaGestori}
                       areas={areas}

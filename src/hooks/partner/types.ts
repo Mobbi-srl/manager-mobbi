@@ -73,6 +73,14 @@ export interface PartnerFormValues {
   areaId?: string; // New field for the area selection
   ranking?: number; // Added ranking field
   note?: string; // New note field
+  // Google Places data
+  latitude?: number;
+  longitude?: number;
+  phoneNumberGoogle?: string;
+  weekdayText?: string[];
+  placeIdGPlace?: string;
+  imgUrlGplace1?: string;
+  imgUrlGplace2?: string;
 }
 
 export interface ContattoFormValues {

@@ -12,6 +12,9 @@ import { ContactInfoFields } from "./form-sections/ContactInfoFields";
 import { RoleSelector } from "./form-sections/RoleSelector";
 import { AreaSelector } from "./form-sections/AreaSelector";
 import { FormActions } from "./form-sections/FormActions";
+import { sanitizeInput, validateInput } from "@/utils/security/inputValidation";
+import { securityMonitor } from "@/utils/security/auditLogger";
+import { toast } from "sonner";
 
 interface UserFormProps {
   user?: UserData;
@@ -78,10 +81,32 @@ const UserForm: React.FC<UserFormProps> = ({
   const onSubmit = async (values: FormValues) => {
     console.log("🔄 UserForm: Submitting form with values:", values);
     
-    if (isCreating) {
-      createMutation.mutate(values);
-    } else if (user) {
-      updateMutation.mutate({ values, userId: user.id });
+    try {
+      // Security validation and sanitization
+      const sanitizedValues: FormValues = {
+        nome: sanitizeInput.string(values.nome),
+        cognome: sanitizeInput.string(values.cognome),
+        email: validateInput.requiredEmail(values.email),
+        telefono: sanitizeInput.phone(values.telefono || "") || "",
+        ruolo: values.ruolo,
+        areeAssegnate: values.areeAssegnate
+      };
+
+      // Log sensitive data access for user management
+      await securityMonitor.trackSensitiveAccess('user_data', {
+        action: isCreating ? 'create_user' : 'update_user',
+        target_user_email: sanitizedValues.email,
+        fields_modified: Object.keys(sanitizedValues)
+      });
+
+      if (isCreating) {
+        createMutation.mutate(sanitizedValues);
+      } else if (user) {
+        updateMutation.mutate({ values: sanitizedValues, userId: user.id });
+      }
+    } catch (error: any) {
+      console.error("Input validation error:", error);
+      toast.error(`Errore di validazione: ${error.message}`);
     }
   };
 

@@ -50,10 +50,37 @@ export const useContattiQuery = () => {
             regione_legale,
             cap_legale,
             nazione_legale,
+            telefono,
+            email,
+            pec,
+            piva,
+            sdi,
+            numero_locali,
+            note,
+            nome_rapp_legale,
+            cognome_rapp_legale,
+            data_nascita_rapp_legale,
+            luogo_nascita_rapp_legale,
+            codice_fiscale_rapp_legale,
+            indirizzo_residenza_rapp_legale,
+            cap_residenza_rapp_legale,
+            citta_residenza_rapp_legale,
+            nazione_residenza_rapp_legale,
+            latitude,
+            longitude,
+            phone_number_google,
+            weekday_text,
+            place_id_g_place,
+            img_url_gplace1,
+            img_url_gplace2,
             area:area_id (
               id,
               nome,
               regione
+            ),
+            tipologia_locale:tipologia_locale_id (
+              id,
+              tipologia
             )
           )
         `)
@@ -78,9 +105,34 @@ export const useContattiQuery = () => {
         throw error;
       }
 
-      console.log(`✅ Fetched ${data?.length || 0} contatti`);
-      console.log("📊 Sample partner data:", data?.[0]?.partner);
-      return data || [];
+      // Process the data to handle JSON fields properly
+      const processedData = data?.map(contatto => ({
+        ...contatto,
+        partner: contatto.partner ? {
+          ...contatto.partner,
+          weekday_text: Array.isArray(contatto.partner.weekday_text) 
+            ? contatto.partner.weekday_text 
+            : contatto.partner.weekday_text 
+              ? (typeof contatto.partner.weekday_text === 'string' 
+                  ? JSON.parse(contatto.partner.weekday_text as string) 
+                  : contatto.partner.weekday_text)
+              : [],
+          richiesta_stazioni: contatto.partner.richiesta_stazioni 
+            ? (typeof contatto.partner.richiesta_stazioni === 'string' 
+                ? JSON.parse(contatto.partner.richiesta_stazioni as string) 
+                : contatto.partner.richiesta_stazioni)
+            : null,
+          stazioni_allocate: contatto.partner.stazioni_allocate 
+            ? (typeof contatto.partner.stazioni_allocate === 'string' 
+                ? JSON.parse(contatto.partner.stazioni_allocate as string) 
+                : contatto.partner.stazioni_allocate)
+            : null,
+        } : null
+      })) || [];
+
+      console.log(`✅ Fetched ${processedData?.length || 0} contatti`);
+      console.log("📊 Sample partner data:", processedData?.[0]?.partner);
+      return processedData;
     },
     enabled: !isGestore || (isGestore && !!userAreas),
     staleTime: 30000,

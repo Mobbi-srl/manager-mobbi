@@ -43,7 +43,7 @@ const PartnerTableRow: React.FC<PartnerTableRowProps> = ({
   const requestedStationsCount = requestedStationsArray.reduce((acc, item) => acc + (item.quantity || 0), 0);
 
   // Get allocated stations data using safe parsing
-  console.log(`🔍 PartnerTableRow: Processing allocated stations for partner ${partner.ragione_sociale || partner.nome_locale}`);
+  console.log(`🔍 PartnerTableRow: Processing allocated stations for partner ${partner.nome_locale || partner.ragione_sociale}`);
   console.log("Raw stazioni_allocate from database:", partner.stazioni_allocate);
   
   const allocatedStationsArray = safeArrayParse(partner.stazioni_allocate, []);
@@ -52,7 +52,7 @@ const PartnerTableRow: React.FC<PartnerTableRowProps> = ({
     return acc + (isNaN(quantity) ? 0 : quantity);
   }, 0);
 
-  console.log(`🎯 Final allocated stations count for ${partner.ragione_sociale || partner.nome_locale}: ${allocatedStationsCount}`);
+  console.log(`🎯 Final allocated stations count for ${partner.nome_locale || partner.ragione_sociale}: ${allocatedStationsCount}`);
 
   const handleToggleEditRanking = () => {
     if (canEditRanking) {
@@ -85,7 +85,7 @@ const PartnerTableRow: React.FC<PartnerTableRowProps> = ({
         </TableCell>
       )}
       <TableCell className="font-medium">
-        {partner.ragione_sociale || partner.nome_locale || "N/A"}
+        {partner.nome_locale || partner.ragione_sociale || "N/A"}
       </TableCell>
       <TableCell>
         <div className="flex items-center gap-1">
