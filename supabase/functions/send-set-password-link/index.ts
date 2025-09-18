@@ -113,51 +113,26 @@ serve(async (req) => {
 
       console.log("URL per impostazione password:", passwordSetupUrl);
 
-      // Invia email con link personalizzato
+      // Invia email per impostazione password
+      console.log("Tentativo di invio email per reset password a:", email);
+      
       const emailResponse = await resend.emails.send({
         from: "Mobbi <info@management.mobbi.it>",
         to: [email],
-        subject: "Impostazione password per Manager Mobbi",
+        subject: "Imposta la tua password - Manager Mobbi",
         html: `
-          <h2>Impostazione Password per Manager Mobbi</h2>
+          <h2>Imposta la tua Password per Manager Mobbi</h2>
           <p>Ciao ${userRecord.nome || ""},</p>
-          <p>Un account è stato creato per te su Manager Mobbi con il ruolo di ${userRecord.ruolo}.</p>
-          <p>Per impostare la tua password e accedere al sistema, clicca sul link seguente:</p>
-          <p><a href="${passwordSetupUrl}" style="padding: 10px 20px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 4px;">Imposta la tua password</a></p>
-          <p>Se non hai richiesto questo account, puoi ignorare questo messaggio.</p>
+          <p>Hai richiesto di impostare una nuova password per il tuo account Manager Mobbi.</p>
+          <p>Per impostare la tua password, clicca sul link seguente:</p>
+          <p><a href="${passwordSetupUrl}" style="padding: 15px 30px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: bold;">Imposta Password</a></p>
+          <p>Oppure copia e incolla questo link nel tuo browser:</p>
+          <p style="background-color: #f5f5f5; padding: 10px; border-radius: 4px; font-family: monospace; word-break: break-all;">${passwordSetupUrl}</p>
+          <p>Questo link scadrà dopo 24 ore per motivi di sicurezza.</p>
+          <p>Se non hai richiesto questo reset password, puoi ignorare questa email.</p>
           <p>Grazie,<br>Il team di Mobbi</p>
         `
       });
-
-      console.log("Email inviata con successo:", emailResponse);
-
-      // Invia anche email di benvenuto
-      try {
-        const welcomeEmailResponse = await resend.emails.send({
-          from: "Mobbi <info@management.mobbi.it>",
-          to: [email],
-          subject: "Benvenuto in Manager Mobbi",
-          html: `
-            <h2>Benvenuto in Manager Mobbi</h2>
-            <p>Ciao ${userRecord.nome || ""},</p>
-            <p>Il tuo account è stato creato con successo. Ti abbiamo inviato un'email separata con le istruzioni per impostare la tua password.</p>
-            <p>Dettagli account:</p>
-            <ul>
-              <li>Email: ${email}</li>
-              <li>Ruolo: ${userRecord.ruolo}</li>
-            </ul>
-            <p>Una volta impostata la password, potrai accedere al sistema usando questo link:</p>
-            <p><a href="${baseUrl}" style="padding: 10px 20px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 4px;">Accedi a Manager Mobbi</a></p>
-            <p>Se hai problemi con l'accesso, contatta l'amministratore.</p>
-            <p>Grazie,<br>Il team di Mobbi</p>
-          `
-        });
-
-        console.log("Email di benvenuto inviata con successo:", welcomeEmailResponse);
-      } catch (welcomeEmailError) {
-        console.error("Errore nell'invio dell'email di benvenuto:", welcomeEmailError);
-        // Continuiamo comunque perché l'email principale di reset è stata inviata
-      }
 
       return new Response(JSON.stringify({
         success: true,
