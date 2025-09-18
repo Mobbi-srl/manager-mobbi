@@ -39,7 +39,7 @@ export const useEmailSubmission = () => {
       }
 
       try {
-        const response = await fetch('https://mtcwareqdrkhpargfphu.supabase.co/send-set-password-link', {
+        const response = await fetch('https://mtcwareqdrkhpargfphu.supabase.co/functions/v1/send-set-password-link', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
