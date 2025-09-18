@@ -16,27 +16,7 @@ export const useEmailSubmission = () => {
         );
       }
 
-      // Prima verifichiamo se l'email esiste nel database
-      const { data: userRecord, error: userError } = await supabase
-        .from('anagrafica_utenti')
-        .select('email')
-        .eq('email', email)
-        .maybeSingle();
-
-      if (userError) {
-        console.error("Errore nel controllo email:", userError);
-        throw createPasswordResetError(
-          "Errore durante la verifica dell'email",
-          'database'
-        );
-      }
-
-      if (!userRecord) {
-        throw createPasswordResetError(
-          "Email non registrata",
-          'database'
-        );
-      }
+      // Skip client-side existence check due to RLS; edge function will validate email securely
 
       try {
         const response = await fetch('https://mtcwareqdrkhpargfphu.supabase.co/functions/v1/send-set-password-link', {
