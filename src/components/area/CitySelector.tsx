@@ -16,13 +16,15 @@ interface CitySelectorProps {
   selectedRegione?: string;
   selectedProvinces: string[];
   isLoading: boolean;
+  userRole?: string;
 }
 
 export const CitySelector = ({ 
   form, 
   selectedRegione, 
   selectedProvinces,
-  isLoading 
+  isLoading,
+  userRole
 }: CitySelectorProps) => {
   const [searchTerm, setSearchTerm] = useState("");
   
@@ -129,8 +131,8 @@ export const CitySelector = ({
         <FormItem>
           <FormLabel>
             {selectedRegione && selectedProvinces.length > 0 
-              ? `Comuni (${selectedProvinces.join(', ')})` 
-              : "Comuni"}
+              ? `Comuni (${selectedProvinces.join(', ')})${userRole === 'SuperAdmin' ? ' - Opzionale' : ''}` 
+              : `Comuni${userRole === 'SuperAdmin' ? ' - Opzionale' : ''}`}
           </FormLabel>
           <FormControl>
             <div className="space-y-3">
@@ -154,6 +156,13 @@ export const CitySelector = ({
                   {selectedComuniNames.length > 0 && (
                     <p className="text-sm text-blue-600">
                       {selectedComuniNames.length} comuni selezionati: {selectedComuniNames.join(', ')}
+                    </p>
+                  )}
+                  
+                  {/* Info message for SuperAdmin */}
+                  {userRole === 'SuperAdmin' && selectedComuniNames.length === 0 && (
+                    <p className="text-sm text-green-600">
+                      Come SuperAdmin puoi creare l'area anche senza selezionare comuni specifici
                     </p>
                   )}
                   
