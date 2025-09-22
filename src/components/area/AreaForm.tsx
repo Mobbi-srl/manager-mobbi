@@ -22,9 +22,10 @@ type RegioneItaliana = Database["public"]["Enums"]["regione_italiana"];
 interface AreaFormProps {
   onSubmit: (data: AreaFormData) => void;
   isSubmitting: boolean;
+  userRole?: string;
 }
 
-const AreaForm: React.FC<AreaFormProps> = ({ onSubmit: parentOnSubmit, isSubmitting }) => {
+const AreaForm: React.FC<AreaFormProps> = ({ onSubmit: parentOnSubmit, isSubmitting, userRole }) => {
   const [selectedRegione, setSelectedRegione] = React.useState<RegioneItaliana | undefined>(undefined);
   const [selectedProvinces, setSelectedProvinces] = React.useState<string[]>([]);
   const [isLoadingData, setIsLoadingData] = React.useState(false);
@@ -139,6 +140,7 @@ const AreaForm: React.FC<AreaFormProps> = ({ onSubmit: parentOnSubmit, isSubmitt
           selectedRegione={selectedRegione}
           selectedProvinces={selectedProvinces}
           isLoading={isLoadingData}
+          userRole={userRole}
         />
 
         <FormField
