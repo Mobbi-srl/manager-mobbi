@@ -3,8 +3,10 @@ import React from "react";
 import { Table, TableHeader, TableBody, TableCell, TableRow, TableHead } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { Download } from "lucide-react";
 import { useAreaStations } from "@/hooks/area-details";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { AreaStation } from "@/hooks/area-details/types";
 
 interface AreaStationsTabProps {
@@ -14,6 +16,7 @@ interface AreaStationsTabProps {
 
 const AreaStationsTab: React.FC<AreaStationsTabProps> = ({ areaId, stations: passedStations }) => {
   console.log(`🔍 AreaStationsTab: Initializing component for area ${areaId}`);
+  const isMobile = useIsMobile();
   
   // Use passed stations if available, otherwise fetch using the hook
   const { stations: fetchedStations, isLoading } = useAreaStations(areaId);
@@ -68,34 +71,101 @@ const AreaStationsTab: React.FC<AreaStationsTabProps> = ({ areaId, stations: pas
       document.body.removeChild(link);
     }
   };
-  
+
+  if (isLoading && !passedStations) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <div className="text-center">
+          <div className="animate-spin w-8 h-8 border-4 border-verde-light border-opacity-50 rounded-full border-t-transparent mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Caricamento stazioni...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (Object.keys(stationsByPartner).length === 0) {
+    return (
+      <div className="text-center py-8 border border-dashed border-gray-700 rounded-lg">
+        <p className="text-muted-foreground">Nessuna stazione trovata per questa area</p>
+      </div>
+    );
+  }
+
   return (
-    <div>
-      <h3 className="text-lg font-semibold mb-4">
+    <div className={isMobile ? 'h-full overflow-y-auto' : ''}>
+      <h3 className={`font-semibold mb-4 ${isMobile ? 'text-base' : 'text-lg'}`}>
         Stazioni nell'area
       </h3>
       
-      <div className="border rounded-md overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Numero Seriale</TableHead>
-              <TableHead>Modello</TableHead>
-              <TableHead>Colore</TableHead>
-              <TableHead>Nome Partner</TableHead>
-              <TableHead>Stato</TableHead>
-              <TableHead>Foto Stazione</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading && !passedStations ? (
+      {isMobile ? (
+        // Mobile Card View
+        <div className="space-y-4">
+          {Object.entries(stationsByPartner).map(([partnerName, partnerStations]) => (
+            <div key={partnerName} className="space-y-2">
+              <h4 className="font-medium text-sm bg-muted/50 p-2 rounded">
+                {partnerName} ({partnerStations.length} stazioni)
+              </h4>
+              {partnerStations.map((station) => (
+                <Card key={station.id} className="w-full">
+                  <CardContent className="p-4 space-y-3">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <p className="font-medium text-sm">{station.seriale || "N/D"}</p>
+                        <p className="text-xs text-muted-foreground">{station.modello || "N/D"}</p>
+                      </div>
+                      <Badge variant={getStatusBadgeVariant(station.stato || "")}>
+                        {station.stato || "N/D"}
+                      </Badge>
+                    </div>
+                    
+                    <div className="text-xs text-muted-foreground">
+                      <p>Colore: {station.colore || "N/D"}</p>
+                      <p>Partner: {station.partner_nome || "N/D"}</p>
+                    </div>
+
+                    {station.documento_allegato && (
+                      <div className="flex items-center gap-2">
+                        <img 
+                          src={station.documento_allegato} 
+                          alt={`Stazione ${station.seriale}`}
+                          className="w-12 h-12 object-cover rounded border"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = 'none';
+                          }}
+                        />
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDownloadDocument(station.documento_allegato!, station.seriale || 'unknown')}
+                          className="flex items-center gap-1 text-xs"
+                        >
+                          <Download className="h-3 w-3" />
+                          Scarica
+                        </Button>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ))}
+        </div>
+      ) : (
+        // Desktop Table View
+        <div className="border rounded-md overflow-hidden">
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-4">
-                  Caricamento...
-                </TableCell>
+                <TableHead>Numero Seriale</TableHead>
+                <TableHead>Modello</TableHead>
+                <TableHead>Colore</TableHead>
+                <TableHead>Nome Partner</TableHead>
+                <TableHead>Stato</TableHead>
+                <TableHead>Foto Stazione</TableHead>
               </TableRow>
-            ) : Object.keys(stationsByPartner).length > 0 ? (
-              Object.entries(stationsByPartner).map(([partnerName, partnerStations]) => (
+            </TableHeader>
+            <TableBody>
+              {Object.entries(stationsByPartner).map(([partnerName, partnerStations]) => (
                 <React.Fragment key={partnerName}>
                   <TableRow className="bg-muted/50">
                     <TableCell colSpan={6} className="font-medium text-sm">
@@ -143,17 +213,11 @@ const AreaStationsTab: React.FC<AreaStationsTabProps> = ({ areaId, stations: pas
                     </TableRow>
                   ))}
                 </React.Fragment>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center py-4">
-                  Nessuna stazione trovata per questa area
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
     </div>
   );
 };
