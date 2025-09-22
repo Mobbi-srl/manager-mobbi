@@ -13,72 +13,14 @@ export const useFetchUserAreas = (userId?: string) => {
       if (!userId) return [];
 
       try {
-        // Verifica se l'utente è un ruolo privilegiato (SuperAdmin, Master, Agenzia)
-        const { data: userData, error: userError } = await supabase
-          .from("anagrafica_utenti")
-          .select("ruolo")
-          .eq("id", userId)
-          .maybeSingle();
-          
-        if (userError) {
-          console.error("❌ useFetchUserAreas: Error fetching user role:", userError);
-          throw userError;
+        // 1) Tenta sempre prima via utente_area (RLS filtra automaticamente per l'utente corrente)
+        const areasFromAssignments = await fetchAreasForUser(userId);
+        if (areasFromAssignments.length > 0) {
+          return areasFromAssignments;
         }
-        
-        // Se non viene trovato l'utente con l'ID di autenticazione, 
-        // proviamo a cercare l'utente usando l'email dall'autenticazione
-        if (!userData) {
-          console.log(`⚠️ useFetchUserAreas: User ${userId} not found in anagrafica_utenti by ID, trying to find by email`);
-          
-          // Otteniamo l'email dell'utente dall'autenticazione
-          const { data: authUser } = await supabase.auth.getUser();
-          const userEmail = authUser?.user?.email;
-          
-          if (!userEmail) {
-            console.log(`⚠️ useFetchUserAreas: Could not get email for user ${userId}`);
-            return [];
-          }
-          
-          // Cerchiamo l'utente per email
-          const { data: userByEmail, error: emailError } = await supabase
-            .from("anagrafica_utenti")
-            .select("id, ruolo")
-            .eq("email", userEmail)
-            .maybeSingle();
-            
-          if (emailError) {
-            console.error("❌ useFetchUserAreas: Error fetching user by email:", emailError);
-            return [];
-          }
-          
-          if (!userByEmail) {
-            console.log(`⚠️ useFetchUserAreas: No user found with email ${userEmail}`);
-            return [];
-          }
-          
-          console.log(`✅ useFetchUserAreas: Found user by email: ${JSON.stringify(userByEmail)}`);
-          
-          // Se l'utente è un gestore, ottieni le sue aree usando l'ID trovato
-          if (userByEmail.ruolo === "Gestore") {
-            return fetchAreasForUser(userByEmail.id);
-          } else {
-            // Per ruoli privilegiati, ottieni tutte le aree
-            console.log(`ℹ️ useFetchUserAreas: User has role ${userByEmail.ruolo}, returning all areas`);
-            return fetchAllAreas();
-          }
-        }
-        
-        // Se l'utente è SuperAdmin, Master o Agenzia, restituisci tutte le aree
-        const isPrivilegedUser = ["SuperAdmin", "Master", "Agenzia"].includes(userData.ruolo);
-        
-        if (isPrivilegedUser) {
-          console.log(`ℹ️ useFetchUserAreas: User ${userId} has role ${userData.ruolo}, returning all areas`);
-          return fetchAllAreas();
-        }
-        
-        // Per utenti Gestore, ottieni solo le aree associate
-        return fetchAreasForUser(userId);
-        
+
+        // 2) Fallback: tutte le aree (solo ruoli privilegiati vedranno risultati per via delle RLS)
+        return await fetchAllAreas();
       } catch (error) {
         console.error("❌ useFetchUserAreas: Unhandled error:", error);
         toast.error("Errore nel recupero delle aree assegnate");
@@ -92,6 +34,7 @@ export const useFetchUserAreas = (userId?: string) => {
 
 // Funzione helper per ottenere tutte le aree
 async function fetchAllAreas(): Promise<Area[]> {
+  // Rimuovi filtri di stato per permettere ai gestori di vedere tutte le loro aree assegnate
   const { data: allAreas, error: allAreasError } = await supabase
     .from("aree_geografiche")
     .select("*, aree_capoluoghi(capoluogo_id, capoluoghi(nome, regione))")
@@ -113,8 +56,7 @@ async function fetchAreasForUser(userId: string): Promise<Area[]> {
   // Query ottimizzata che ottiene direttamente le aree associate all'utente
   const { data: userAreas, error: directError } = await supabase
     .from("utente_area")
-    .select("area:area_id(*, aree_capoluoghi(capoluogo_id, capoluoghi(nome, regione)))")
-    .eq("utente_id", userId);
+    .select("area:area_id(*, aree_capoluoghi(capoluogo_id, capoluoghi(nome, regione)))");
 
   if (directError) {
     console.error("❌ useFetchUserAreas: Error fetching user-area direct relationships:", directError);
