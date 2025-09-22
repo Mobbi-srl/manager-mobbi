@@ -26,10 +26,13 @@ const AttivazioneArea = () => {
         </div>
         <div className="flex gap-2">
           {/* <ImportComuniButton /> */}
-          <Button onClick={() => setIsFormModalOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Nuova Area
-          </Button>
+          {/* Hide "Nuova Area" button for Gestore users */}
+          {ruolo !== 'Gestore' && (
+            <Button onClick={() => setIsFormModalOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Nuova Area
+            </Button>
+          )}
         </div>
       </div>
 
