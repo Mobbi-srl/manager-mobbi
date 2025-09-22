@@ -43,7 +43,8 @@ const AttivazioneArea = () => {
       {/* Modal per la creazione di nuove aree */}
       {isFormModalOpen && (
         <AreaFormModal 
-          onAreaCreated={() => setIsFormModalOpen(false)} 
+          onAreaCreated={() => setIsFormModalOpen(false)}
+          userRole={ruolo}
         />
       )}
     </div>
