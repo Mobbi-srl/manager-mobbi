@@ -14,7 +14,7 @@ export const useAreeConStatistiche = () => {
     queryFn: async () => {
       try {
         console.log("🔍 useAreeConStatistiche: Fetching basic area information");
-        // 1. Get basic area information
+        // 1. Get basic area information - rimuovi filtri di stato per gestori
         const { data: aree, error } = await supabase
           .from("aree_geografiche")
           .select("*, aree_capoluoghi(capoluogo_id, capoluoghi(nome))");
