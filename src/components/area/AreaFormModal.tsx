@@ -6,9 +6,10 @@ import AreaForm from "./AreaForm";
 
 interface AreaFormModalProps {
   onAreaCreated?: () => void;
+  userRole?: string;
 }
 
-const AreaFormModal: React.FC<AreaFormModalProps> = ({ onAreaCreated }) => {
+const AreaFormModal: React.FC<AreaFormModalProps> = ({ onAreaCreated, userRole }) => {
   const [isOpen, setIsOpen] = useState(true);
   const createArea = useCreateArea();
 
@@ -42,7 +43,7 @@ const AreaFormModal: React.FC<AreaFormModalProps> = ({ onAreaCreated }) => {
           <DialogTitle>Nuova Area Geografica</DialogTitle>
         </DialogHeader>
         <div className="flex-1 overflow-y-auto pr-2">
-          <AreaForm onSubmit={handleSubmit} isSubmitting={createArea.isPending} />
+          <AreaForm onSubmit={handleSubmit} isSubmitting={createArea.isPending} userRole={userRole} />
         </div>
       </DialogContent>
     </Dialog>
