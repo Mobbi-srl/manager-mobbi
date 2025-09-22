@@ -5,10 +5,12 @@ import { useAuth } from "@/hooks/auth";
 import { useAreeConStatistiche } from "@/hooks/area/useAreeConStatistiche";
 import { useDeleteArea } from "@/hooks/area";
 import { useFetchUserAreas } from "@/hooks/users/areas";
+import { useIsMobile } from "@/hooks/use-mobile";
 import AreaDetailModal from "./AreaDetailModal";
 import EditAreaModal from "./EditAreaModal";
 import AreaTableHeader from "./AreaTableHeader";
 import AreaTableRow from "./AreaTableRow";
+import AreaCard from "./AreaCard";
 import AreaTableEmptyState from "./AreaTableEmptyState";
 import AreaTableLoadingState from "./AreaTableLoadingState";
 import AreaTableFilters from "./AreaTableFilters";
@@ -24,6 +26,7 @@ const AreeTable: React.FC = () => {
   const isMaster = userRole === "Master";
   const isAgenzia = userRole === "Agenzia";
   const isGestoreRole = userRole === "Gestore";
+  const isMobile = useIsMobile();
 
   const isPrivilegedUser = isSuperAdmin || isMaster || isAgenzia;
 
@@ -156,30 +159,63 @@ const AreeTable: React.FC = () => {
         onClearAll={handleClearAllFilters}
       />
 
-      <div className="relative overflow-x-auto">
-        <Table>
-          <AreaTableHeader />
-          <TableBody>
-            {isLoading ? (
-              <AreaTableLoadingState />
-            ) : (filteredAreas.length > 0 ? (
-              filteredAreas.map((area) => (
-                <AreaTableRow
-                  key={area.id}
-                  area={area}
-                  isSuperAdmin={isSuperAdmin}
-                  isMaster={isMaster}
-                  onViewDetails={handleViewDetails}
-                  onEditArea={handleEditArea}
-                  onDeleteArea={handleDeleteArea}
-                />
-              ))
-            ) : (
-              <AreaTableEmptyState isGestoreRole={isGestoreRole} />
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+      {isMobile ? (
+        // Mobile Card View
+        <div className="space-y-4">
+          {isLoading ? (
+            <div className="text-center py-8">
+              <div className="animate-spin w-8 h-8 border-4 border-verde-light border-opacity-50 rounded-full border-t-transparent mx-auto mb-4"></div>
+              <p className="text-muted-foreground">Caricamento aree in corso...</p>
+            </div>
+          ) : filteredAreas.length > 0 ? (
+            filteredAreas.map((area) => (
+              <AreaCard
+                key={area.id}
+                area={area}
+                isSuperAdmin={isSuperAdmin}
+                isMaster={isMaster}
+                onViewDetails={handleViewDetails}
+                onEditArea={handleEditArea}
+                onDeleteArea={handleDeleteArea}
+              />
+            ))
+          ) : (
+            <div className="text-center py-8 border border-dashed border-gray-700 rounded-lg">
+              <p className="text-muted-foreground mb-4">
+                {isGestoreRole
+                  ? "Non hai aree assegnate. Contatta un amministratore per richiedere l'accesso alle aree geografiche."
+                  : "Non sono presenti aree nel sistema. Crea una nuova area per iniziare."}
+              </p>
+            </div>
+          )}
+        </div>
+      ) : (
+        // Desktop Table View
+        <div className="relative overflow-x-auto">
+          <Table>
+            <AreaTableHeader />
+            <TableBody>
+              {isLoading ? (
+                <AreaTableLoadingState />
+              ) : (filteredAreas.length > 0 ? (
+                filteredAreas.map((area) => (
+                  <AreaTableRow
+                    key={area.id}
+                    area={area}
+                    isSuperAdmin={isSuperAdmin}
+                    isMaster={isMaster}
+                    onViewDetails={handleViewDetails}
+                    onEditArea={handleEditArea}
+                    onDeleteArea={handleDeleteArea}
+                  />
+                ))
+              ) : (
+                <AreaTableEmptyState isGestoreRole={isGestoreRole} />
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
 
       <AreaDetailModal
         areaId={selectedAreaId}
