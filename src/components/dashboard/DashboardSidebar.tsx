@@ -13,23 +13,49 @@ import {
 } from "@/components/ui/sidebar";
 import { useAuth } from "@/hooks/auth";
 import { useUserProfile } from "@/hooks/useUserProfile";
+import { supabase } from "@/integrations/supabase/client";
 
 const DashboardSidebar = () => {
   const { user } = useAuth();
   const { userProfile } = useUserProfile(user);
   const location = useLocation();
 
-  // Usa prima i dati dal profilo utente, poi dai metadati
-  const ruolo = userProfile?.ruolo || user?.user_metadata?.ruolo;
+  // Se userProfile è disponibile, usa quello, altrimenti usa i metadati
+  // Come fallback finale, fetch diretto dal database se entrambi falliscono
+  const [dbRole, setDbRole] = React.useState<string | null>(null);
+  
+  // Fetch del ruolo dal database se necessario
+  React.useEffect(() => {
+    if (!userProfile?.ruolo && !user?.user_metadata?.ruolo && user) {
+      // Fallback robusto: usa funzione RPC che rispetta le policy e usa auth.uid()
+      const fetchDbRole = async () => {
+        try {
+          const { data, error } = await supabase.rpc('get_current_user_role');
+          if (!error && typeof data === 'string' && data) {
+            setDbRole(data);
+          } else if (error) {
+            console.error('Errore RPC get_current_user_role:', error);
+          }
+        } catch (err) {
+          console.error('Eccezione nel recupero ruolo via RPC:', err);
+        }
+      };
+      fetchDbRole();
+    }
+  }, [user?.id, userProfile?.ruolo, user?.user_metadata?.ruolo]);
+
+  const ruolo = userProfile?.ruolo || user?.user_metadata?.ruolo || dbRole;
   const isSuperAdmin = ruolo === "SuperAdmin";
   const isMaster = ruolo === "Master";
   const isGestore = ruolo === "Gestore";
   const isAgenzia = ruolo === "Agenzia";
 
-  // Registra quando cambia il percorso per aiutare con il debugging
+  // Debug temporaneo per risolvere il problema
   useEffect(() => {
-    console.log("DashboardSidebar - Route changed to:", location.pathname);
-  }, [location.pathname]);
+    if (user?.email) {
+      console.log(`${user.email} - Profilo:`, userProfile?.ruolo, "- Metadata:", user?.user_metadata?.ruolo, "- Ruolo finale:", ruolo, "- isGestore:", isGestore);
+    }
+  }, [user?.email, userProfile?.ruolo, user?.user_metadata?.ruolo, ruolo, isGestore]);
 
   // Controllo se l'utente può accedere alla pagina Gestione Partner
   const canAccessPartnerManagement = isSuperAdmin || isMaster || isGestore || isAgenzia;
