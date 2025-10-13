@@ -3,10 +3,12 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "../auth";
 import { useUserAreas } from "../users/useUserAreas";
+import { useUserProfile } from "../useUserProfile";
 
 export const useContattiQuery = () => {
   const { user } = useAuth();
-  const userRole = user?.user_metadata?.ruolo;
+  const { userProfile } = useUserProfile(user);
+  const userRole = userProfile?.ruolo || user?.user_metadata?.ruolo;
   const isGestore = userRole === "Gestore";
   
   // Get user areas if the user is a Gestore
@@ -86,17 +88,9 @@ export const useContattiQuery = () => {
         `)
         .not("partner_id", "is", null);
 
-      // Apply filtering based on user role
-      if (isGestore && userAreas && userAreas.length > 0) {
-        const areaIds = userAreas.map(area => area.id);
-        console.log("🎯 Gestore filtering by areas:", areaIds);
-        
-        // Filter partners by area_id
-        query = query.filter("partner.area_id", "in", `(${areaIds.join(",")})`);
-      } else if (isGestore && userAreas && userAreas.length === 0) {
-        console.log("⚠️ Gestore has no assigned areas, returning empty result");
-        return [];
-      }
+      // Escludi i partner senza area da questa sezione (verranno mostrati nel tab dedicato)
+      // Nota: il filtro sul join va scritto come "partner.area_id"
+      query = query.not("partner.area_id", "is", null);
 
       const { data, error } = await query;
 
