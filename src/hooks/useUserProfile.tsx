@@ -78,21 +78,53 @@ export const useUserProfile = (user: User | null) => {
 
         // If user not found in anagrafica_utenti, try to use metadata as fallback
         if (!data) {
-          console.warn("Utente non trovato in anagrafica_utenti, uso metadata:", user.email);
+          console.info("Utente non trovato in anagrafica_utenti, uso metadata:", user.email);
           const metadata = user.user_metadata || {};
-          
-          // If we have metadata, use it as profile
-          if (metadata.nome && metadata.cognome && metadata.ruolo) {
-            const fallbackProfile = {
-              nome: metadata.nome,
-              cognome: metadata.cognome,
-              ruolo: metadata.ruolo,
-              email: user.email
-            };
-            profileCacheRef.current[user.email] = fallbackProfile;
-            setUserProfile(fallbackProfile);
+
+          // Determine role: prefer metadata, fallback to DB function
+          let ruolo: string | undefined = metadata.ruolo as string | undefined;
+          if (!ruolo) {
+            try {
+              const { data: roleResult } = await supabase.rpc('get_current_user_role');
+              if (typeof roleResult === 'string' && roleResult.length > 0) {
+                ruolo = roleResult;
+              }
+            } catch (e) {
+              // Silent fallback if RPC not available
+            }
           }
-          
+
+          // Build a best-effort profile even if some fields are missing
+          const fallbackProfile = {
+            nome: (metadata.nome as string) || '',
+            cognome: (metadata.cognome as string) || '',
+            ruolo: ruolo || 'SCONOSCIUTO',
+            email: user.email
+          };
+          profileCacheRef.current[user.email] = fallbackProfile;
+          setUserProfile(fallbackProfile);
+
+          // Optionally sync missing metadata once to improve future sessions
+          if (
+            !metadataUpdatedRef.current &&
+            (metadata.nome !== fallbackProfile.nome || metadata.cognome !== fallbackProfile.cognome || metadata.ruolo !== fallbackProfile.ruolo)
+          ) {
+            try {
+              const { error: updateError } = await supabase.auth.updateUser({
+                data: {
+                  ...(fallbackProfile.nome ? { nome: fallbackProfile.nome } : {}),
+                  ...(fallbackProfile.cognome ? { cognome: fallbackProfile.cognome } : {}),
+                  ...(ruolo ? { ruolo } : {})
+                }
+              });
+              if (!updateError) {
+                metadataUpdatedRef.current = true;
+              }
+            } catch (_) {
+              // ignore metadata update errors
+            }
+          }
+
           setLoading(false);
           fetchingProfileRef.current = false;
           return;
