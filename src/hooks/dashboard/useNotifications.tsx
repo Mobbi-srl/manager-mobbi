@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { markNotificationAsRead, markAllNotificationsAsRead } from "@/utils/notificationUtils";
+import { useUserProfile } from "@/hooks/useUserProfile";
 
 export type Notifica = {
   id: string;
@@ -18,11 +19,13 @@ export type Notifica = {
 
 export const useNotifications = () => {
   const { user } = useAuth();
+  const { userProfile } = useUserProfile(user);
   const queryClient = useQueryClient();
   const [localUnreadCount, setLocalUnreadCount] = useState(0);
   const hasInitialized = useRef(false);
-  const isSuperAdmin = user?.user_metadata?.ruolo === "SuperAdmin";
-  const isMaster = user?.user_metadata?.ruolo === "Master";
+  const userRole = userProfile?.ruolo || user?.user_metadata?.ruolo;
+  const isSuperAdmin = userRole === "SuperAdmin";
+  const isMaster = userRole === "Master";
 
   const { 
     data: notifiche = [], 
@@ -92,7 +95,7 @@ export const useNotifications = () => {
   const markAllAsReadMutation = useMutation({
     mutationFn: () => markAllNotificationsAsRead(
       user?.id ?? '', 
-      user?.user_metadata?.ruolo ?? ''
+      userRole ?? ''
     ),
     onSuccess: () => {
       setLocalUnreadCount(0);
