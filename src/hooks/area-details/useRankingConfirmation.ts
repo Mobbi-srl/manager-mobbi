@@ -5,12 +5,14 @@ import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { StatoPartner } from "@/hooks/partner/types";
 import { useAuth } from "@/hooks/auth";
+import { useUserProfile } from "@/hooks/useUserProfile";
 
 export const useRankingConfirmation = (areaId: string) => {
   const [isUpdating, setIsUpdating] = useState<Record<string, boolean>>({});
   const queryClient = useQueryClient();
   const { user } = useAuth();
-  const userRole = user?.user_metadata?.ruolo;
+  const { userProfile } = useUserProfile(user);
+  const userRole = userProfile?.ruolo || user?.user_metadata?.ruolo;
   const isPrivilegedUser = userRole === "SuperAdmin" || userRole === "Master";
 
   const toggleRankingConfirmation = async (partnerId: string, currentStatus: boolean, newRanking?: number) => {
