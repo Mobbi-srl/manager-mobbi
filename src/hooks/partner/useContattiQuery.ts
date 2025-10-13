@@ -13,9 +13,10 @@ export const useContattiQuery = () => {
   
   // Get user areas if the user is a Gestore
   const { data: userAreas } = useUserAreas(isGestore ? user?.id : undefined);
+  const areaIds = Array.isArray(userAreas) ? userAreas.map(a => a.id).filter(Boolean) : [];
 
   return useQuery({
-    queryKey: ["contatti", userRole, user?.id],
+    queryKey: ["contatti", userRole, user?.id, ...(areaIds || [])],
     queryFn: async () => {
       console.log("🔍 Fetching contatti with user role:", userRole);
       
@@ -92,6 +93,11 @@ export const useContattiQuery = () => {
       // Nota: il filtro sul join va scritto come "partner.area_id"
       query = query.not("partner.area_id", "is", null);
 
+      // Se l'utente è Gestore, limita ulteriormente alle sue aree assegnate (client-side guard oltre alle RLS)
+      if (isGestore && areaIds.length > 0) {
+        query = query.in("partner.area_id", areaIds as string[]);
+      }
+
       const { data, error } = await query;
 
       if (error) {
@@ -128,7 +134,7 @@ export const useContattiQuery = () => {
       console.log("📊 Sample partner data:", processedData?.[0]?.partner);
       return processedData;
     },
-    enabled: !isGestore || (isGestore && !!userAreas),
+    enabled: !isGestore || (isGestore && areaIds.length > 0),
     staleTime: 30000,
     refetchOnWindowFocus: false,
   });
