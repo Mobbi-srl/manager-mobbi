@@ -67,10 +67,32 @@ export const useUserProfile = (user: User | null) => {
           .from("anagrafica_utenti")
           .select("nome, cognome, ruolo, email")
           .eq("email", user.email)
-          .single();
+          .maybeSingle();
 
         if (error) {
           console.error("Errore nel recupero del profilo utente:", error);
+          setLoading(false);
+          fetchingProfileRef.current = false;
+          return;
+        }
+
+        // If user not found in anagrafica_utenti, try to use metadata as fallback
+        if (!data) {
+          console.warn("Utente non trovato in anagrafica_utenti, uso metadata:", user.email);
+          const metadata = user.user_metadata || {};
+          
+          // If we have metadata, use it as profile
+          if (metadata.nome && metadata.cognome && metadata.ruolo) {
+            const fallbackProfile = {
+              nome: metadata.nome,
+              cognome: metadata.cognome,
+              ruolo: metadata.ruolo,
+              email: user.email
+            };
+            profileCacheRef.current[user.email] = fallbackProfile;
+            setUserProfile(fallbackProfile);
+          }
+          
           setLoading(false);
           fetchingProfileRef.current = false;
           return;
