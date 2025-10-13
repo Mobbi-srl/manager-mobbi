@@ -4,10 +4,12 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { AreaPartner } from "./types";
 import { useAuth } from "@/hooks/auth";
+import { useUserProfile } from "@/hooks/useUserProfile";
 
 export const useAreaPartners = (areaId: string) => {
   const { user } = useAuth();
-  const userRole = user?.user_metadata?.ruolo;
+  const { userProfile } = useUserProfile(user);
+  const userRole = userProfile?.ruolo || user?.user_metadata?.ruolo;
   const isGestore = userRole === "Gestore";
   const userId = user?.id;
 
