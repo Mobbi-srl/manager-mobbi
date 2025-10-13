@@ -62,19 +62,7 @@ const GestionePartner = () => {
     }
   }, [isGestore, userAssignedAreas, userProfile]);
 
-  // Effect to ensure partners are properly associated with areas
-  useEffect(() => {
-    if (filteredContatti && filteredContatti.length > 0 && !isLoadingContatti) {
-      associatePartnersWithAreas(filteredContatti);
-
-      // Debug: Check if any partners are missing area_id
-      const partnersWithoutArea = filteredContatti.filter(contatto => !contatto.partner?.area_id);
-      if (partnersWithoutArea.length > 0) {
-        console.log(`Warning: ${partnersWithoutArea.length} partners found without area_id:`,
-          partnersWithoutArea.map(c => c.partner?.nome_locale || c.partner?.ragione_sociale));
-      }
-    }
-  }, [filteredContatti, isLoadingContatti, associatePartnersWithAreas]);
+  // Removed auto-assignment logic - Gestori only see partners they signaled
 
   const handleEditPartner = (contatto: Contatto) => {
     setPartnerToEdit(contatto);
@@ -93,8 +81,8 @@ const GestionePartner = () => {
         isGestore={isGestore}
       />
 
-      {isGestore && userAssignedAreas && userAssignedAreas.length > 0 && (
-        <GestoreAreaBadge userAssignedAreas={userAssignedAreas} />
+      {isGestore && (
+        <GestoreAreaBadge userAssignedAreas={userAssignedAreas ?? []} />
       )}
 
       <PartnerManagementTabs
