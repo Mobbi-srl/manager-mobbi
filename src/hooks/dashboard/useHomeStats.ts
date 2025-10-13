@@ -3,10 +3,12 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserAreas } from "@/hooks/users/useUserAreas";
+import { useUserProfile } from "@/hooks/useUserProfile";
 
 export const useHomeStats = () => {
   const { user } = useAuth();
-  const isGestoreRole = user?.user_metadata?.ruolo === "Gestore";
+  const { userProfile } = useUserProfile(user);
+  const isGestoreRole = (userProfile?.ruolo || user?.user_metadata?.ruolo) === "Gestore";
   
   // Get user-specific areas if the user is a Gestore
   const { data: userAreas } = useUserAreas(isGestoreRole ? user?.id : undefined);
