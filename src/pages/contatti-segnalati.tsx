@@ -1,7 +1,5 @@
 
 import React, { useState, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { Contact } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -10,6 +8,7 @@ import { Contatto } from "@/hooks/partner/partnerTypes";
 import ContattiFilters from "@/components/contatti/ContattiFilters";
 import ContactGroup from "@/components/contatti/ContactGroup";
 import EditContattoModal from "@/components/contatti/EditContattoModal";
+import { useContattiQuery } from "@/hooks/partner/useContattiQuery";
 
 interface Partner {
   id: string;
@@ -55,36 +54,8 @@ const ContattiSegnalati = () => {
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedContatto, setSelectedContatto] = useState<any | null>(null);
 
-  // Fetch dei contatti da Supabase
-  const { data: contatti, isLoading, error } = useQuery({
-    queryKey: ["contatti"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("contatti")
-        .select(`
-          id, 
-          nome, 
-          cognome, 
-          email, 
-          numero, 
-          ruolo,
-          partner_id,
-          partner:partner_id (
-            id,
-            ragione_sociale,
-            nome_locale,
-            stato,
-            pec,
-            nome_rapp_legale,
-            cognome_rapp_legale,
-            telefono
-          )
-        `);
-
-      if (error) throw error;
-      return data as ContattoLocal[];
-    },
-  });
+  // Fetch dei contatti da Supabase con filtro per aree del Gestore
+  const { data: contatti, isLoading, error } = useContattiQuery();
 
   // Group contacts by partner and add legal representative
   const groupedContacts = useMemo(() => {
@@ -94,24 +65,29 @@ const ContattiSegnalati = () => {
 
     contatti.forEach(contatto => {
       if (contatto.partner) {
-        if (!grouped[contatto.partner_id]) {
-          grouped[contatto.partner_id] = {
-            partner: contatto.partner,
+        const partnerId = contatto.partner.id;
+        if (!grouped[partnerId]) {
+          grouped[partnerId] = {
+            partner: contatto.partner as any,
             contatti: []
           };
         }
 
-        grouped[contatto.partner_id].contatti.push(contatto);
+        grouped[partnerId].contatti.push({
+          ...contatto,
+          partner_id: partnerId,
+          partner: contatto.partner as any
+        } as any);
 
         // Add legal representative if exists and not already added
         const partner = contatto.partner;
         if (partner.nome_rapp_legale && partner.cognome_rapp_legale) {
-          const hasLegalRep = grouped[contatto.partner_id].contatti.some(
+          const hasLegalRep = grouped[partnerId].contatti.some(
             (c: any) => c.isLegalRep === true
           );
           
           if (!hasLegalRep) {
-            grouped[contatto.partner_id].contatti.push({
+            grouped[partnerId].contatti.push({
               id: `legal-rep-${partner.id}`,
               nome: partner.nome_rapp_legale,
               cognome: partner.cognome_rapp_legale,
@@ -119,8 +95,8 @@ const ContattiSegnalati = () => {
               numero: partner.telefono,
               ruolo: "Rappresentante Legale",
               isLegalRep: true,
-              partner_id: contatto.partner_id,
-              partner: contatto.partner
+              partner_id: partnerId,
+              partner: contatto.partner as any
             });
           }
         }
