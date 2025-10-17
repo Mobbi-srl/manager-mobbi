@@ -1,9 +1,10 @@
-
-import React from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Pencil, Trash2, FileText, Camera, Frown, RotateCcw, QrCode, Eye } from "lucide-react";
 import { Contatto } from "@/hooks/partner/partnerTypes";
 import { useUpdatePartnerStatus } from "@/hooks/partner/useUpdatePartnerStatus";
+import { supabase } from "@/integrations/supabase/client";
+import { FedexErrorDialog } from "@/components/partner/FedexErrorDialog";
 
 type PartnerStatus = "CONTATTO" | "APPROVATO" | "SELEZIONATO" | "ALLOCATO" | "CONTRATTUALIZZATO" | "PERSO" | "ATTIVO";
 
@@ -27,6 +28,9 @@ const ContattoRowActions: React.FC<ContattoRowActionsProps> = ({
   onOpenDeleteDialog
 }) => {
   const updatePartnerStatus = useUpdatePartnerStatus();
+  const [fedexErrorOpen, setFedexErrorOpen] = useState(false);
+  const [fedexErrorCode, setFedexErrorCode] = useState<string>('');
+  const [fedexErrorMessage, setFedexErrorMessage] = useState<string>('');
 
   const handleStatusChange = (newStatus: PartnerStatus) => {
     if (!contatto.partner?.id) return;
@@ -140,9 +144,110 @@ const ContattoRowActions: React.FC<ContattoRowActionsProps> = ({
             <Button
               variant="outline"
               size="icon"
-              onClick={() => {
-                // TODO: Implementare logica stampa etichetta
-                console.log('Stampa etichetta per partner:', contatto.partner?.id);
+              onClick={async () => {
+                try {
+                  console.log('🚀 Inizio generazione etichetta FedEx per partner:', contatto.partner?.id);
+                  
+                  // Recupera i dati del partner con stazioni allocate e contatti
+                  const { data: partnerData, error: partnerError } = await supabase
+                    .from('partner')
+                    .select(`
+                      *,
+                      contatti:contatti(*)
+                    `)
+                    .eq('id', contatto.partner?.id)
+                    .single();
+                  
+                  if (partnerError || !partnerData) {
+                    console.error('❌ Errore recupero dati partner:', partnerError);
+                    setFedexErrorCode(partnerError?.code || 'PARTNER_DATA_ERROR');
+                    setFedexErrorOpen(true);
+                    return;
+                  }
+                  
+                  console.log('📋 Dati partner recuperati:', partnerData);
+                  
+                  // Verifica che ci siano stazioni allocate
+                  if (!partnerData.stazioni_allocate || 
+                      (Array.isArray(partnerData.stazioni_allocate) && partnerData.stazioni_allocate.length === 0) ||
+                      (typeof partnerData.stazioni_allocate === 'object' && Object.keys(partnerData.stazioni_allocate).length === 0)) {
+                    console.error('❌ Nessuna stazione allocata per il partner:', contatto.partner?.id);
+                    setFedexErrorCode('NO_STATIONS_ALLOCATED');
+                    setFedexErrorOpen(true);
+                    return;
+                  }
+                  
+                  // Verifica che ci sia almeno un contatto
+                  if (!partnerData.contatti || partnerData.contatti.length === 0) {
+                    console.error('❌ Nessun contatto trovato per il partner:', contatto.partner?.id);
+                    setFedexErrorCode('NO_CONTACTS_FOUND');
+                    setFedexErrorOpen(true);
+                    return;
+                  }
+                  
+                  console.log('✅ Stazioni allocate trovate:', partnerData.stazioni_allocate);
+                  console.log('✅ Contatti trovati:', partnerData.contatti);
+                  
+                  // Step 1: Authenticate with FedEx API
+                  const authResponse = await supabase.functions.invoke('fedex-auth');
+                  
+                  if (authResponse.error) {
+                    console.error('❌ Errore autenticazione FedEx:', authResponse.error);
+                    setFedexErrorCode('FEDEX_AUTH_ERROR');
+                    setFedexErrorOpen(true);
+                    return;
+                  }
+                  
+                  console.log('✅ Autenticazione FedEx completata');
+                  
+                  // Step 2: Generate shipping label usando direttamente i dati del partner
+                  const shipmentResponse = await supabase.functions.invoke('fedex-shipment-partner', {
+                    body: {
+                      access_token: authResponse.data.access_token,
+                      partner_data: partnerData
+                    }
+                  });
+                  
+                  if (shipmentResponse.error) {
+                    console.error('❌ Errore generazione spedizione FedEx:', shipmentResponse.error);
+                    console.error('📋 Dati completi risposta:', shipmentResponse.data);
+
+                    // Estrai code e message da details.errors - la risposta dell'edge function mette i dati in shipmentResponse.data
+                    const fedexErrors = shipmentResponse.data?.details?.errors || shipmentResponse.data?.errors;
+                    const errorCode = Array.isArray(fedexErrors) && fedexErrors.length > 0 
+                      ? fedexErrors[0].code 
+                      : 'FEDEX_ERROR';
+                    const errorMessage = Array.isArray(fedexErrors) && fedexErrors.length > 0 
+                      ? fedexErrors[0].message 
+                      : '';
+
+                    setFedexErrorCode(errorCode);
+                    setFedexErrorMessage(errorMessage);
+                    setFedexErrorOpen(true);
+                    return;
+                  }
+                  
+                  console.log('✅ Spedizione FedEx generata:', shipmentResponse.data);
+                  
+                  // Extract and open PDF URL from the correct path
+                  const shipmentData = shipmentResponse.data.shipmentData?.output;
+                  const labelUrl = shipmentData?.transactionShipments?.[0]?.pieceResponses?.[0]?.packageDocuments?.[0]?.url;
+                  
+                  if (labelUrl) {
+                    console.log('📄 Apertura PDF etichetta:', labelUrl);
+                    window.open(labelUrl, '_blank');
+                  } else {
+                    console.log('📋 Struttura risposta:', shipmentResponse.data);
+                    setFedexErrorCode('PDF_URL_NOT_FOUND');
+                    setFedexErrorMessage('URL del documento non trovato nella risposta FedEx');
+                    setFedexErrorOpen(true);
+                  }
+                  
+                } catch (error) {
+                  console.error('💥 Errore durante la generazione etichetta:', error);
+                  setFedexErrorCode(error instanceof Error ? error.message : 'UNKNOWN_ERROR');
+                  setFedexErrorOpen(true);
+                }
               }}
               title="Stampa etichetta di spedizione"
             >
@@ -160,6 +265,12 @@ const ContattoRowActions: React.FC<ContattoRowActionsProps> = ({
           )}
         </>
       )}
+      <FedexErrorDialog 
+        open={fedexErrorOpen}
+        onOpenChange={setFedexErrorOpen}
+        errorCode={fedexErrorCode}
+        errorMessage={fedexErrorMessage}
+      />
     </div>
   );
 };
